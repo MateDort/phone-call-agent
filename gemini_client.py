@@ -105,12 +105,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
             )
             
             # Start or continue chat
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G1","location":"gemini_client.py:97","message":"Gemini request start","data":{"model":self.model_name,"is_chat":bool(chat_history)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             if chat_history:
                 chat = model_with_instruction.start_chat(history=chat_history)
                 response = chat.send_message(prompt)

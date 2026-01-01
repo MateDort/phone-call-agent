@@ -110,12 +110,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
             # #endregion
             logger.error(f"Unexpected error in Ollama chat client: {e}")
             raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Ollama API error: {e}")
-            raise  # Raise to trigger Gemini fallback
-        except Exception as e:
-            logger.error(f"Unexpected error in Ollama client: {e}")
-            raise  # Raise to trigger Gemini fallback
     
     def check_connection(self) -> bool:
         """Check if Ollama is accessible.
