@@ -58,10 +58,22 @@ class ConversationManager:
             'content': user_text.strip()
         })
         
-        # Try Gemini first if available, fallback to Ollama
+        # Try Ollama first because it has no safety filters
         response = None
         
-        if self.gemini_client:
+        try:
+            # Format prompt for Ollama
+            prompt = self._format_prompt(user_text)
+            response = self.ollama_client.generate_response(
+                prompt=prompt,
+                context=self.conversation_history[:-1]
+            )
+            logger.info("Ollama response generated successfully")
+        except Exception as ollama_error:
+            logger.warning(f"Ollama failed: {ollama_error}. Attempting Gemini fallback...")
+        
+        # Fallback to Gemini if Ollama failed or wasn't available
+        if response is None and self.gemini_client:
             try:
                 # Gemini handles system prompts via its configuration, so we just pass the user text
                 response = self.gemini_client.generate_response(
@@ -70,22 +82,12 @@ class ConversationManager:
                 )
                 logger.info("Gemini response generated successfully")
             except Exception as e:
-                logger.warning(f"Gemini failed: {e}. Attempting Ollama fallback...")
+                logger.error(f"Gemini fallback also failed: {e}")
+                # If both fail, response remains None
         
-        # Fallback to Ollama if Gemini failed or wasn't available
+        # Return fallback message if both fail
         if response is None:
-            try:
-                # Format prompt for Ollama
-                prompt = self._format_prompt(user_text)
-                response = self.ollama_client.generate_response(
-                    prompt=prompt,
-                    context=self.conversation_history[:-1]
-                )
-                logger.info("Ollama response generated successfully")
-            except Exception as ollama_error:
-                logger.error(f"Ollama fallback also failed: {ollama_error}")
-                # Return fallback message if both fail
-                response = "I'm having trouble processing that right now. Could you repeat?"
+            response = "I'm having trouble processing that right now. Could you repeat?"
         
         # Add agent response to history
         self.conversation_history.append({

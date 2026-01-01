@@ -49,3 +49,40 @@ t=2025-12-31T19:04:44-0500 lvl=info msg="join connections" obj=join id=ee5bdc34e
 t=2025-12-31T19:04:45-0500 lvl=info msg="join connections" obj=join id=7b3529df07f5 l=127.0.0.1:5001 r=3.88.186.139:57724
 t=2025-12-31T19:04:49-0500 lvl=info msg="join connections" obj=join id=45fad7c0e98a l=127.0.0.1:5001 r=107.20.115.16:47574
 t=2025-12-31T19:04:50-0500 lvl=info msg="join connections" obj=join id=7d50eafb35d1 l=127.0.0.1:5001 r=13.218.144.131:55208
+t=2025-12-31T19:07:00-0500 lvl=info msg="join connections" obj=join id=61c5955bb383 l=127.0.0.1:5001 r=54.145.48.76:31856
+t=2025-12-31T19:07:01-0500 lvl=info msg="join connections" obj=join id=900d7e79eb72 l=127.0.0.1:5001 r=34.227.52.108:31348
+t=2025-12-31T19:07:07-0500 lvl=info msg="join connections" obj=join id=f2c11fe55884 l=127.0.0.1:5001 r=52.91.56.177:61736
+t=2025-12-31T19:07:16-0500 lvl=info msg="join connections" obj=join id=43250918ca53 l=127.0.0.1:5001 r=52.0.171.112:30642
+t=2025-12-31T19:07:17-0500 lvl=info msg="join connections" obj=join id=67e8acb1b3cf l=127.0.0.1:5001 r=44.203.155.180:56060
+t=2025-12-31T19:07:23-0500 lvl=info msg="join connections" obj=join id=b3cef641c48a l=127.0.0.1:5001 r=34.230.11.199:63928
+t=2025-12-31T19:07:42-0500 lvl=info msg="join connections" obj=join id=011a9328a7f0 l=127.0.0.1:5001 r=3.87.223.160:50974
+t=2025-12-31T19:30:09-0500 lvl=info msg="join connections" obj=join id=86ec19d3f931 l=127.0.0.1:5001 r=3.81.31.35:63686
+t=2025-12-31T19:30:11-0500 lvl=info msg="join connections" obj=join id=05eb2182d467 l=127.0.0.1:5001 r=98.90.194.221:32810
+t=2025-12-31T19:30:20-0500 lvl=info msg="join connections" obj=join id=8e58b2981598 l=127.0.0.1:5001 r=54.196.221.3:53406
+t=2025-12-31T19:30:29-0500 lvl=info msg="join connections" obj=join id=e01377112aec l=127.0.0.1:5001 r=44.207.7.174:60122
+t=2025-12-31T19:30:31-0500 lvl=info msg="join connections" obj=join id=e1be896d9b41 l=127.0.0.1:5001 r=44.204.160.37:29482
+t=2025-12-31T19:30:39-0500 lvl=info msg="join connections" obj=join id=0c945fda1b71 l=127.0.0.1:5001 r=98.93.241.244:21334
+t=2025-12-31T19:30:58-0500 lvl=info msg="join connections" obj=join id=31ccbcfa466c l=127.0.0.1:5001 r=72.44.49.101:34512
+t=2025-12-31T19:35:37-0500 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=2e04204190d5 clientid=d15c20dc1f45949290f18765b53df3c0
+t=2025-12-31T19:35:37-0500 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e7782dbe2cfc err="session closed"
+t=2025-12-31T19:35:37-0500 lvl=info msg="client session established" obj=tunnels.session
+t=2025-12-31T19:35:37-0500 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-12-31T20:22:09-0500 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=130eadff2116 clientid=d15c20dc1f45949290f18765b53df3c0
+t=2025-12-31T20:22:09-0500 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e7782dbe2cfc err="session closed"
+t=2025-12-31T20:22:10-0500 lvl=info msg="client session established" obj=tunnels.session
+t=2025-12-31T20:22:10-0500 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-12-31T20:39:13-0500 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e7782dbe2cfc err="read EOF from remote peer"
+t=2025-12-31T20:39:14-0500 lvl=info msg="client session established" obj=tunnels.session
+t=2025-12-31T20:39:14-0500 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-12-31T20:39:28-0500 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=1b23f089047e clientid=d15c20dc1f45949290f18765b53df3c0
+t=2025-12-31T21:29:35-0500 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e7782dbe2cfc err="read EOF from remote peer"
+t=2025-12-31T21:29:35-0500 lvl=info msg="client session established" obj=tunnels.session
+t=2025-12-31T21:29:35-0500 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-12-31T21:29:50-0500 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=a5fc7f533cf8 clientid=d15c20dc1f45949290f18765b53df3c0
+t=2025-12-31T21:30:04-0500 lvl=info msg="join connections" obj=join id=da9365c5720c l=127.0.0.1:5001 r=18.234.190.147:48656
+t=2025-12-31T21:30:06-0500 lvl=info msg="join connections" obj=join id=63b52cce0592 l=127.0.0.1:5001 r=174.129.170.3:63048
+t=2025-12-31T21:30:10-0500 lvl=info msg="join connections" obj=join id=285eb7e7c060 l=127.0.0.1:5001 r=3.88.186.139:29034
+t=2025-12-31T21:30:19-0500 lvl=info msg="join connections" obj=join id=6c2ccde810dd l=127.0.0.1:5001 r=3.88.186.139:49800
+t=2025-12-31T21:30:22-0500 lvl=info msg="join connections" obj=join id=060da81c15ac l=127.0.0.1:5001 r=54.173.28.33:61818
+t=2025-12-31T21:30:30-0500 lvl=info msg="join connections" obj=join id=016a86362323 l=127.0.0.1:5001 r=35.171.20.109:62344
+t=2025-12-31T21:30:49-0500 lvl=info msg="join connections" obj=join id=e79b462c5410 l=127.0.0.1:5001 r=98.86.111.67:47282
