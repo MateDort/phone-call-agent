@@ -1,0 +1,51 @@
+t=2025-12-31T18:52:42-0500 lvl=info msg="no configuration paths supplied"
+t=2025-12-31T18:52:42-0500 lvl=info msg="using configuration at default config path" path="/Users/matedort/Library/Application Support/ngrok/ngrok.yml"
+t=2025-12-31T18:52:42-0500 lvl=info msg="open config file" path="/Users/matedort/Library/Application Support/ngrok/ngrok.yml" err=nil
+t=2025-12-31T18:52:42-0500 lvl=info msg="FIPS 140 mode" enabled=false
+t=2025-12-31T18:52:42-0500 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4040 allow_hosts=[]
+t=2025-12-31T18:52:43-0500 lvl=info msg="client session established" obj=tunnels.session
+t=2025-12-31T18:52:43-0500 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-12-31T18:52:43-0500 lvl=info msg="started tunnel" obj=tunnels name=command_line addr=http://localhost:5001 url=https://2ff553cb9d26.ngrok-free.app
+t=2025-12-31T18:52:47-0500 lvl=info msg=start pg=/api/tunnels id=80dd72f7d77287d5
+t=2025-12-31T18:52:47-0500 lvl=info msg=end pg=/api/tunnels id=80dd72f7d77287d5 status=200 dur=330.458µs
+t=2025-12-31T18:53:17-0500 lvl=info msg="join connections" obj=join id=2700f129c881 l=127.0.0.1:5001 r=13.221.119.155:64828
+t=2025-12-31T18:53:19-0500 lvl=info msg="join connections" obj=join id=2b51fd7a1533 l=127.0.0.1:5001 r=54.167.20.206:57626
+t=2025-12-31T18:53:22-0500 lvl=info msg="join connections" obj=join id=0c0fb436be29 l=127.0.0.1:5001 r=54.224.247.248:63096
+t=2025-12-31T18:53:31-0500 lvl=info msg="join connections" obj=join id=6eb39f2c7f79 l=127.0.0.1:5001 r=98.93.154.17:59534
+t=2025-12-31T18:53:34-0500 lvl=info msg="join connections" obj=join id=f51e6c71aa0d l=127.0.0.1:5001 r=98.83.25.40:51936
+t=2025-12-31T18:53:41-0500 lvl=info msg="join connections" obj=join id=e4233eb07b6d l=127.0.0.1:5001 r=13.221.239.100:21540
+t=2025-12-31T18:53:59-0500 lvl=info msg="join connections" obj=join id=16e4b53f405d l=127.0.0.1:5001 r=54.227.31.11:49612
+t=2025-12-31T18:58:09-0500 lvl=info msg="join connections" obj=join id=4cdc16cbe36d l=127.0.0.1:5001 r=54.198.81.116:57434
+t=2025-12-31T18:58:10-0500 lvl=info msg="join connections" obj=join id=9ce7b13267ed l=127.0.0.1:5001 r=44.204.155.96:32020
+t=2025-12-31T18:58:13-0500 lvl=info msg="join connections" obj=join id=aadf0fbc70c8 l=127.0.0.1:5001 r=54.198.81.116:35396
+t=2025-12-31T18:58:25-0500 lvl=info msg="join connections" obj=join id=74fceed403dd l=127.0.0.1:5001 r=3.87.82.120:60310
+t=2025-12-31T18:58:25-0500 lvl=info msg="join connections" obj=join id=cd8cfd3a254e l=127.0.0.1:5001 r=18.209.24.151:40172
+t=2025-12-31T18:58:33-0500 lvl=info msg="join connections" obj=join id=070778156c30 l=127.0.0.1:5001 r=54.227.31.11:59290
+t=2025-12-31T18:58:35-0500 lvl=info msg="join connections" obj=join id=947289bf44c6 l=127.0.0.1:5001 r=23.20.90.222:41276
+t=2025-12-31T18:58:47-0500 lvl=info msg="join connections" obj=join id=4e40a22252b6 l=127.0.0.1:5001 r=3.81.31.35:29834
+t=2025-12-31T18:59:06-0500 lvl=info msg="join connections" obj=join id=d797fd15ca7a l=127.0.0.1:5001 r=34.228.170.163:30432
+t=2025-12-31T19:00:31-0500 lvl=info msg="join connections" obj=join id=80baef1fcc84 l=127.0.0.1:5001 r=107.22.109.195:53932
+t=2025-12-31T19:00:33-0500 lvl=info msg="join connections" obj=join id=a54eb6f14f0c l=127.0.0.1:5001 r=98.93.154.17:47358
+t=2025-12-31T19:00:45-0500 lvl=info msg="join connections" obj=join id=cf529e4330b8 l=127.0.0.1:5001 r=34.228.36.229:62656
+t=2025-12-31T19:00:54-0500 lvl=info msg="join connections" obj=join id=147c29aa7d1c l=127.0.0.1:5001 r=54.144.236.211:34128
+t=2025-12-31T19:00:54-0500 lvl=info msg="join connections" obj=join id=f916980939da l=127.0.0.1:5001 r=54.152.76.248:37462
+t=2025-12-31T19:00:58-0500 lvl=info msg="join connections" obj=join id=fd3edeeac5db l=127.0.0.1:5001 r=54.205.159.173:53056
+t=2025-12-31T19:01:10-0500 lvl=info msg="join connections" obj=join id=d2749aee02a0 l=127.0.0.1:5001 r=54.91.248.176:57798
+t=2025-12-31T19:01:23-0500 lvl=info msg="join connections" obj=join id=0173188355b4 l=127.0.0.1:5001 r=34.228.36.229:63880
+t=2025-12-31T19:01:34-0500 lvl=info msg="join connections" obj=join id=88b0974d2123 l=127.0.0.1:5001 r=3.88.186.139:21664
+t=2025-12-31T19:01:43-0500 lvl=info msg="join connections" obj=join id=e8cae554322f l=127.0.0.1:5001 r=98.86.111.67:38850
+t=2025-12-31T19:01:49-0500 lvl=info msg="join connections" obj=join id=a28e53bd41bf l=127.0.0.1:5001 r=34.228.36.229:61012
+t=2025-12-31T19:02:08-0500 lvl=info msg="join connections" obj=join id=dbf6d41a9314 l=127.0.0.1:5001 r=72.44.49.101:41956
+t=2025-12-31T19:04:01-0500 lvl=info msg="join connections" obj=join id=2e83ca3c3f85 l=127.0.0.1:5001 r=23.20.169.196:46996
+t=2025-12-31T19:04:03-0500 lvl=info msg="join connections" obj=join id=66b783307a04 l=127.0.0.1:5001 r=98.93.241.244:41270
+t=2025-12-31T19:04:07-0500 lvl=info msg="join connections" obj=join id=f24467e31e00 l=127.0.0.1:5001 r=3.87.223.160:53854
+t=2025-12-31T19:04:17-0500 lvl=info msg="join connections" obj=join id=be804e33770a l=127.0.0.1:5001 r=13.220.49.181:26130
+t=2025-12-31T19:04:18-0500 lvl=info msg="join connections" obj=join id=a76bd038f983 l=127.0.0.1:5001 r=54.198.81.116:22194
+t=2025-12-31T19:04:23-0500 lvl=info msg="join connections" obj=join id=1dbf0e3f32c2 l=127.0.0.1:5001 r=98.93.154.17:39926
+t=2025-12-31T19:04:25-0500 lvl=info msg="join connections" obj=join id=81415dec8e8b l=127.0.0.1:5001 r=54.89.161.180:28514
+t=2025-12-31T19:04:37-0500 lvl=info msg="join connections" obj=join id=83e9b764bba3 l=127.0.0.1:5001 r=54.167.20.206:55686
+t=2025-12-31T19:04:38-0500 lvl=info msg="join connections" obj=join id=ec794006dac8 l=127.0.0.1:5001 r=52.91.230.211:50510
+t=2025-12-31T19:04:44-0500 lvl=info msg="join connections" obj=join id=ee5bdc34e3d5 l=127.0.0.1:5001 r=52.91.66.243:44006
+t=2025-12-31T19:04:45-0500 lvl=info msg="join connections" obj=join id=7b3529df07f5 l=127.0.0.1:5001 r=3.88.186.139:57724
+t=2025-12-31T19:04:49-0500 lvl=info msg="join connections" obj=join id=45fad7c0e98a l=127.0.0.1:5001 r=107.20.115.16:47574
+t=2025-12-31T19:04:50-0500 lvl=info msg="join connections" obj=join id=7d50eafb35d1 l=127.0.0.1:5001 r=13.218.144.131:55208
