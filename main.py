@@ -41,6 +41,22 @@ class PhoneCallAgent:
         else:
             logger.info(f"Connected to Ollama (model: {self.ollama_client.model})")
         
+        # Initialize Claude client as primary LLM (optional)
+        claude_client = None
+        if Config.CLAUDE_API_KEY:
+            api_key_display = Config.CLAUDE_API_KEY[:10] + "..." + Config.CLAUDE_API_KEY[-4:] if len(Config.CLAUDE_API_KEY) > 14 else Config.CLAUDE_API_KEY[:10] + "..."
+            logger.info(f"Claude API key found: {api_key_display} (length: {len(Config.CLAUDE_API_KEY)})")
+            try:
+                from claude_client import ClaudeClient
+                claude_client = ClaudeClient()
+                logger.info(f"Claude configured (model: {claude_client.model_name}) as primary LLM.")
+            except ImportError as e:
+                logger.warning("Claude API key provided but anthropic package not installed. Install with: pip install anthropic")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Claude client: {e}.")
+        else:
+            logger.info("No Claude API key found in configuration")
+
         # Initialize Gemini client as fallback (optional)
         gemini_client = None
         # Echo API key for debugging (first 10 chars only for security)
@@ -55,15 +71,13 @@ class PhoneCallAgent:
                 from gemini_client import GeminiClient
                 gemini_client = GeminiClient()
                 # Skip connection check to avoid blocking startup - we'll try at runtime
-                logger.info(f"Gemini configured (model: {gemini_client.model_name}) as primary LLM.")
+                logger.info(f"Gemini configured (model: {gemini_client.model_name}) as secondary fallback.")
             except ImportError as e:
                 logger.warning("Gemini API key provided but google-generativeai package not installed. Install with: pip install google-generativeai")
                 gemini_client = None
             except Exception as e:
-                logger.warning(f"Failed to initialize Gemini client: {e}. Will use Ollama.")
+                logger.warning(f"Failed to initialize Gemini client: {e}.")
                 gemini_client = None
-        else:
-            logger.info("No Gemini API key provided. Using Ollama only.")
         
         # Initialize ElevenLabs client (optional)
         elevenlabs_client = None
@@ -82,7 +96,7 @@ class PhoneCallAgent:
 
         # Initialize handlers
         self.speech_handler = SpeechHandler(elevenlabs_client=elevenlabs_client)
-        self.conversation_manager = ConversationManager(self.ollama_client, gemini_client)
+        self.conversation_manager = ConversationManager(self.ollama_client, claude_client, gemini_client)
         self.twilio_handler = TwilioHandler(self.conversation_manager, self.speech_handler)
         
         # Setup signal handlers for graceful shutdown

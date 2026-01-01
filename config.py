@@ -27,6 +27,10 @@ class Config:
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
     GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')  # Updated to 'gemini-flash-latest' based on ListModels output
     
+    # Claude Configuration
+    CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
+    CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-opus-4-5-20251101')
+    
     # ElevenLabs Configuration
     ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY', '')
     ELEVENLABS_VOICE_ID = os.getenv('ELEVENLABS_VOICE_ID', 'EXAVIT9mxAsU4AKpD7Kx')  # Default: Bella
