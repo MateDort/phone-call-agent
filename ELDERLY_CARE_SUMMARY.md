@@ -185,13 +185,13 @@ Natural conversation continues
 
 ```bash
 # 1. Install dependencies
-pip install -r requirements_new.txt
+pip install -r requirements.txt
 
 # 2. Setup database with your info
 python setup_elderly_db.py
 
 # 3. Configure .env
-cp env_new.example .env
+cp env.example .env
 # Edit with your credentials
 
 # 4. Start ngrok (2 terminals)

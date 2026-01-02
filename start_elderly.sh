@@ -10,8 +10,8 @@ echo ""
 # Check if .env exists
 if [ ! -f .env ]; then
     echo "❌ Error: .env file not found"
-    echo "Please copy env_new.example to .env and configure it:"
-    echo "  cp env_new.example .env"
+    echo "Please copy env.example to .env and configure it:"
+    echo "  cp env.example .env"
     echo "  # Then edit .env with your credentials"
     exit 1
 fi
@@ -28,7 +28,7 @@ source venv/bin/activate
 
 # Install/upgrade dependencies
 echo "📚 Installing dependencies..."
-pip install -q -r requirements_new.txt
+pip install -q -r requirements.txt
 
 # Check if database exists, if not, set it up
 if [ ! -f "elderly_care.db" ]; then

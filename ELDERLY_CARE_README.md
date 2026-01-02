@@ -61,12 +61,12 @@ The assistant knows all about Máté:
 
 ### 1. Install Dependencies
 ```bash
-pip install -r requirements_new.txt
+pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment
 ```bash
-cp env_new.example .env
+cp env.example .env
 # Edit .env with your credentials
 ```
 

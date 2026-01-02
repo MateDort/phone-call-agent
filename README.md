@@ -1,142 +1,396 @@
-# Phone Call Agent
+# Elderly Care Phone Agent
 
-An AI-powered phone call agent that can initiate calls and have natural conversations using local Ollama LLM and macOS voice synthesis.
+A compassionate AI phone assistant for elderly care, powered by Google Gemini Live Audio with natural voice conversations, smart reminders, family contact management, and multilingual support.
 
-## Features
+## 🌟 Features
 
-- Makes outbound phone calls via Twilio
-- Uses local Ollama LLM (llama2) for conversation
-- Text-to-speech using macOS built-in voice
-- Real-time speech recognition via Twilio
-- Maintains conversation context
+### 🔔 Smart Medication Reminders
+- **Automatic phone calls** when reminders are due
+- **Recurring reminders** - daily, weekly, or specific days
+- **Easy management** - natural language commands
+- **Local storage** - all reminders saved safely
+- **During call announcements** - mentions reminders naturally if already on the phone
 
-## Prerequisites
+**Examples:**
+- "Remind me to take my pill every day at 3pm"
+- "What reminders do I have?"
+- "Delete my 8am reminder"
+- "Change the 9am reminder to 10am"
 
-1. **Python 3.8+**
-2. **Ollama** installed and running locally
-   - Install from [ollama.ai](https://ollama.ai)
-   - Pull the llama2 model: `ollama pull llama2`
-3. **Twilio Account** with:
-   - Account SID
-   - Auth Token
-   - A phone number (configured in project: +1 (445) 234-4131)
-4. **macOS** (for `say` command and `afconvert`)
+### 👥 Family & Friends Contacts
+- Store family and friends information
+- Quick access to phone numbers and birthdays
+- **Birthday reminders** - "Today is Helen's birthday!"
+- Easy lookup by name
 
-## Setup
+**Currently stored:**
+- **Helen Stadler** - Girlfriend
+  - Phone: 404-953-5533
+  - Birthday: August 27, 2004
 
-1. **Clone or navigate to the project directory:**
-   ```bash
-   cd phone-call-agent
-   ```
+### 📖 Personal Biography
+The assistant knows all about Máté:
+- Life story and background (Hungary → USA)
+- Swimming achievements and competitive career
+- Education (Life University, graduating 2026)
+- Goals and aspirations (designer-inventor)
+- Values and interests
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 🌍 Multilingual Support
+- **English** (default)
+- **Hungarian** (magyar)
+- **Spanish** (español)
+- Easy switching: "Switch to Hungarian" or "Váltson magyarra"
 
-3. **Configure environment variables:**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your Twilio credentials:
-   ```
-   TWILIO_ACCOUNT_SID=your_account_sid
-   TWILIO_AUTH_TOKEN=your_auth_token
-   ```
+### 🔍 Google Search
+- Current weather, news, sports scores
+- Real-time information automatically retrieved
 
-4. **Set up ngrok for webhooks (local development):**
-   
-   Twilio needs a publicly accessible URL for webhooks. For local development:
-   
-   ```bash
-   # Install ngrok: https://ngrok.com/download
-   # Start ngrok tunnel
-   ngrok http 5000
-   ```
-   
-   Copy the ngrok URL (e.g., `https://abc123.ngrok.io`) and update `.env`:
-   ```
-   WEBHOOK_BASE_URL=https://abc123.ngrok.io
-   ```
+### 🎤 Natural Voice Conversations
+- **Low latency** (~500ms response time)
+- **Natural interruptions** - just like talking to a person
+- **Warm and friendly** - conversational and supportive
+- **Clear speech** - easy to understand
 
-5. **Ensure Ollama is running:**
-   ```bash
-   # Check if Ollama is running
-   curl http://localhost:11434/api/tags
-   
-   # If not running, start it (usually runs automatically after installation)
-   ```
+## 🚀 Quick Setup
 
-## Usage
+### Prerequisites
+- Python 3.9+
+- Twilio account with phone number
+- Google Gemini API key
+- ngrok (for local development)
 
-1. **Start the agent:**
-   ```bash
-   python main.py
-   ```
+### Installation
 
-2. The agent will:
-   - Start the webhook server
-   - Initiate a call to the target number (404 952 5557)
-   - Say "hey friend how can i help you"
-   - Listen for your response and continue the conversation
+1. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
 
-3. **Stop the agent:**
-   - Press `Ctrl+C` to gracefully shutdown
+2. **Configure environment:**
+```bash
+cp env.example .env
+# Edit .env with your credentials
+```
 
-## Configuration
+**Required in `.env`:**
+```env
+# Twilio (Required)
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_PHONE_NUMBER=+1234567890
+TARGET_PHONE_NUMBER=+1234567890
 
-Edit `.env` file to customize:
+# Webhook URLs (Required)
+WEBHOOK_BASE_URL=https://your-url.ngrok.io
+WEBHOOK_PORT=5000
+WEBSOCKET_PORT=5001
 
-- `TARGET_PHONE_NUMBER`: Phone number to call (default: +14049525557)
-- `OLLAMA_MODEL`: Ollama model to use (default: llama2)
-- `WEBHOOK_PORT`: Port for webhook server (default: 5000)
+# Gemini (Required)
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_VOICE=Kore  # Options: Kore, Puck, Charon
 
-## Project Structure
+# Language (Optional)
+LANGUAGE=en  # Options: en, hu, es
+
+# Optional
+AUTO_CALL=false  # Set true to auto-dial on startup
+```
+
+3. **Setup database:**
+```bash
+python setup_elderly_db.py
+```
+
+This initializes the local database with:
+- User bio (Máté's information)
+- Contacts (Helen Stadler)
+- Reminder system
+
+4. **Start ngrok (one terminal with the script):**
+```bash
+./start_ngrok.sh
+```
+
+This starts both required tunnels (ports 5000 and 5001) in one session.
+
+Copy the HTTPS URL from the output and update `WEBHOOK_BASE_URL` in your `.env` file.
+
+5. **Run the agent:**
+```bash
+python main_elderly.py
+# or
+./start_elderly.sh
+```
+
+## 📞 How It Works
+
+### Automatic Reminder Calls
+
+```
+Reminder Time Arrives
+    ↓
+System Checks if User is on Phone
+    ↓
+If NOT on phone:
+    ↓
+System Makes Automatic Call
+    ↓
+User Answers
+    ↓
+AI: "Hi Máté! You have a reminder: take your afternoon medication"
+    ↓
+Natural conversation continues
+
+If ALREADY on phone:
+    ↓
+AI Mentions Naturally: "By the way, it's time to take your medication"
+```
+
+## 💬 Example Conversations
+
+### Setting Reminders
+```
+User: "Remind me to take my pill every day at 3pm"
+AI: "Reminder saved: take your pill at 3:00 PM every day"
+
+User: "What reminders do I have?"
+AI: "Your reminders:
+     - Take afternoon medication at 3:00 PM every day
+     - Doctor appointment at 8:00 AM on January 15"
+
+User: "Delete my 8am reminder"
+AI: "Deleted reminder: Doctor appointment"
+```
+
+### Looking Up Contacts
+```
+User: "What's Helen's phone number?"
+AI: "Helen Stadler's phone number is 404-953-5533"
+
+User: "When is Helen's birthday?"
+AI: "Helen's birthday is August 27, 2004"
+```
+
+### Learning About User
+```
+User: "Tell me about my background"
+AI: "You were born in 2003 in Dunaújváros, raised in Kisapostag, Hungary. 
+     You started swimming at age 3 and became a top competitor in the U.S."
+
+User: "What are my goals?"
+AI: "Your goals include becoming an iconic designer-inventor and achieving 
+     financial freedom by 30."
+```
+
+### Language Switching
+```
+User: "Switch to Hungarian"
+AI: "Rendben, magyar nyelvre váltok."
+
+User: "Emlékeztess, hogy vegyek be gyógyszert minden nap délután 3-kor"
+AI: "Emlékeztető mentve: vegyek be gyógyszert 15:00-kor minden nap"
+
+User: "Switch to English"
+AI: "Switching to English."
+```
+
+## 🗂️ Database Structure
+
+All data is stored locally in `elderly_care.db`:
+
+### Reminders Table
+- ID, title, datetime, recurrence pattern
+- Days of week (for weekly recurring)
+- Active status, last triggered time
+
+### Contacts Table
+- Name, relation, phone, birthday, notes
+
+### User Bio Table
+- Key-value pairs for biographical information
+
+## 🔧 Customization
+
+### Add More Contacts
+
+```python
+from database import Database
+db = Database("elderly_care.db")
+
+db.add_contact(
+    name="Dr. Smith",
+    relation="Doctor",
+    phone="555-1234",
+    birthday="1970-05-15",
+    notes="Family physician"
+)
+```
+
+### Modify User Bio
+
+```python
+db.set_bio("favorite_food", "Hungarian goulash")
+db.set_bio("hometown", "Kisapostag, Hungary")
+```
+
+### Add New Language
+
+1. Add translations to `translations.py`
+2. Update `Config.SUPPORTED_LANGUAGES` in `config.py`
+3. Restart the agent
+
+## 🎯 System Architecture
+
+```
+┌─────────────────────────────────────────┐
+│  Reminder Checker (Background)          │
+│  - Checks every 60 seconds              │
+│  - Triggers calls when reminders due    │
+└────────┬────────────────────────────────┘
+         │
+         ↓
+┌─────────────────────────────────────────┐
+│  Phone Call (Twilio)                    │
+│  - Inbound or auto-triggered            │
+└────────┬────────────────────────────────┘
+         │
+         ↓
+┌─────────────────────────────────────────┐
+│  Gemini Live Audio (Main Agent)         │
+│  - Natural voice conversations          │
+│  - Google Search for current info       │
+│  - Multilingual support                 │
+│  - Function calling for actions         │
+└────────┬────────────────────────────────┘
+         │
+         ├─> 🔔 Reminder Agent (Local DB)
+         ├─> 👥 Contacts Agent (Local DB)
+         ├─> 📖 User Bio Agent (Local DB)
+         ├─> 🔔 Notification Agent
+         ├─> 🕐 Time Utility
+         └─> 🔍 Google Search (Built-in)
+```
+
+## 📂 Project Structure
 
 ```
 phone-call-agent/
-├── main.py                 # Entry point
-├── config.py              # Configuration management
-├── twilio_handler.py       # Twilio integration
-├── speech_handler.py      # Text-to-speech
-├── ollama_client.py        # Ollama LLM client
-├── conversation_manager.py # Conversation state
-├── requirements.txt       # Python dependencies
-├── .env.example          # Environment template
-└── README.md             # This file
+├── main_elderly.py             # Main entry point
+├── config.py                   # Configuration management
+├── database.py                 # SQLite database operations
+├── gemini_live_client.py       # Gemini Live Audio client
+├── sub_agents_elderly.py       # Specialized sub-agents
+├── reminder_checker.py         # Background reminder system
+├── translations.py             # Multilingual support
+├── twilio_media_streams.py     # Twilio WebSocket integration
+├── setup_elderly_db.py         # Database initialization
+├── start_elderly.sh            # Quick startup script
+├── start_ngrok.sh              # ngrok tunnel manager
+├── requirements_new.txt        # Python dependencies
+├── env_new.example             # Environment template
+├── elderly_care.db             # Local database (created on setup)
+├── ELDERLY_CARE_README.md      # Detailed documentation
+├── ELDERLY_CARE_SUMMARY.md     # Feature summary
+└── project.md                  # Project notes
 ```
 
-## How It Works
+## 🔒 Privacy & Security
 
-1. **Call Initiation**: `main.py` starts Flask server and initiates Twilio call
-2. **Webhook Handling**: Twilio sends webhook to `/webhook/voice` when call connects
-3. **Greeting**: Agent generates greeting audio using macOS `say` command
-4. **Speech Input**: Twilio's `<Gather>` verb captures user speech
-5. **Processing**: Speech → Text → Ollama LLM → Response text
-6. **Response**: Response text → macOS `say` → Audio → Twilio playback
-7. **Loop**: Continues conversation until call ends
+- **All data stored locally** on your machine
+- **No cloud storage** for personal information
+- **Database file:** `elderly_care.db` in project directory
+- **Easy backup** - just copy the .db file
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
-**Cannot connect to Ollama:**
-- Ensure Ollama is running: `ollama list`
-- Check OLLAMA_BASE_URL in `.env`
+### Reminder Not Triggering?
+- Check the time is correct in the database
+- Ensure the agent is running
+- Check logs for errors
 
-**Twilio webhook errors:**
-- Verify ngrok is running and WEBHOOK_BASE_URL is correct
-- Check Twilio console for webhook logs
+### Call Quality Issues?
+- Verify ngrok tunnels are running
+- Check internet connection
+- Review Twilio call logs
 
-**Audio generation issues:**
-- Ensure macOS `say` command works: `say "test"`
-- Check `afconvert` is available (built into macOS)
+### Can't Find Contact?
+- Try searching by first name only
+- Check spelling in database
+- Use `python setup_elderly_db.py` to reset
 
-**Call not connecting:**
-- Verify Twilio credentials in `.env`
-- Check phone numbers are in E.164 format (+1XXXXXXXXXX)
-- Review Twilio console for call logs
+### Language Not Switching?
+- Ensure translations exist in `translations.py`
+- Check `LANGUAGE` setting in config
+- Restart the agent after changes
 
-## License
+## 💡 Tips for Best Experience
 
-MIT
+### For Clear Communication
+- Speak naturally - the AI understands conversational language
+- Be specific with times: "3pm" rather than "afternoon"
+- For reminders, mention "every day" or "daily" for recurring
+
+### For Reminders
+- Set them ahead of time for best results
+- Use consistent times (e.g., always 3pm for medication)
+- List your reminders regularly to stay organized
+
+### For Contacts
+- Add important phone numbers (doctor, family, friends)
+- Include birthdays so the AI can remind you
+- Update notes with helpful information
+
+## 📊 System Requirements
+
+- **Python:** 3.9 or higher
+- **Internet:** Stable connection required
+- **RAM:** 512MB minimum
+- **Storage:** 100MB for code + database
+
+## 💰 Cost Estimates
+
+Based on typical usage:
+
+- **Gemini API:** ~$0.02 per minute of conversation
+- **Twilio Voice:** ~$0.01-0.02 per minute
+- **Total:** ~$0.03-0.04 per minute
+
+## 🎉 What Makes This Special
+
+- **Designed for elderly care** - simple, warm, supportive
+- **Automatic reminders** - never miss medication
+- **Natural voice** - like talking to a friend
+- **Local storage** - private and secure
+- **Family focused** - quick access to loved ones
+- **Multilingual** - speak in your preferred language
+- **Low latency** - responds immediately
+- **Always available** - 24/7 assistance
+
+## 📝 Next Steps
+
+1. ✅ Set up your reminders
+2. ✅ Add your family contacts
+3. ✅ Test with a phone call
+4. ✅ Customize the user bio
+5. ✅ Set your preferred language
+6. ✅ Enjoy having a helpful AI assistant!
+
+## 🔗 Resources
+
+- [Gemini API Documentation](https://ai.google.dev/docs)
+- [Twilio Media Streams](https://www.twilio.com/docs/voice/twiml/stream)
+- [Python Documentation](https://docs.python.org/3/)
+
+## 📄 License
+
+MIT License - Feel free to use and modify for your needs.
+
+---
+
+**Built with ❤️ for elderly care using Gemini 2.5 Flash Native Audio**
+
+**Status:** ✅ Production Ready for Personal Use
+
+For detailed feature documentation, see `ELDERLY_CARE_README.md`
 
