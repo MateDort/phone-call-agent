@@ -192,22 +192,23 @@ class ReminderAgent(SubAgent):
             days_of_week = ",".join(days_matches)
             time_str = re.sub(r'every|' + days_pattern, '', time_str).strip()
         
-        # Parse base time
+        # Parse base time - ALWAYS use fresh current time
         now = datetime.now()
         target_time = now
         
-        # Extract hour (3pm, 8am, etc.)
-        time_match = re.search(r'(\d{1,2})\s*(am|pm)', time_str)
+        # Extract time with optional minutes (3pm, 8:30am, 09:14 AM, etc.)
+        time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', time_str)
         if time_match:
             hour = int(time_match.group(1))
-            period = time_match.group(2)
+            minute = int(time_match.group(2)) if time_match.group(2) else 0
+            period = time_match.group(3)
             
             if period == 'pm' and hour != 12:
                 hour += 12
             elif period == 'am' and hour == 12:
                 hour = 0
             
-            target_time = target_time.replace(hour=hour, minute=0, second=0, microsecond=0)
+            target_time = target_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
         
         # Check for relative days
         if "tomorrow" in time_str:
@@ -506,6 +507,15 @@ def get_function_declarations() -> list:
                     }
                 },
                 "required": ["message"]
+            }
+        },
+        {
+            "name": "get_current_time",
+            "description": "Get the current date and time. Use this whenever you need to know what time it is right now.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {},
+                "required": []
             }
         }
     ]

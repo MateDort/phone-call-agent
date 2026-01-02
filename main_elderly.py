@@ -43,7 +43,13 @@ class ElderlyPhoneAgent:
         logger.info("Database initialized")
         
         # Initialize Gemini Live client
-        system_instruction = """You are a helpful AI assistant for an elderly person named Máté.
+        from datetime import datetime
+        current_time = datetime.now().strftime("%I:%M %p")
+        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        
+        system_instruction = f"""You are a helpful AI assistant for an elderly person named Máté.
+
+IMPORTANT: When the call starts, the time is approximately {current_time} on {current_date}. However, time changes during the call. Whenever you need to know the exact current time (for answering time questions, scheduling reminders, etc.), use the get_current_time function to get the precise time.
 
 Your role:
 - Help with medication reminders and daily tasks
@@ -58,6 +64,7 @@ You have access to:
 - Contact information for family and friends (with birthdays)
 - Máté's biographical information
 - Google Search for current information
+- get_current_time function - use this to get the exact current time whenever needed
 
 Keep responses concise and conversational - aim for 1-2 sentences unless more detail is needed.
 Be warm, patient, and supportive. If there's a reminder due, mention it naturally in conversation."""
@@ -73,7 +80,8 @@ Be warm, patient, and supportive. If there's a reminder due, mention it naturall
         # Initialize reminder checker (will be passed to Twilio handler)
         self.reminder_checker = ReminderChecker(
             db=self.db,
-            call_trigger=self._trigger_reminder_call
+            call_trigger=self._trigger_reminder_call,
+            gemini_client=self.gemini_client
         )
         
         # Initialize Twilio handler with reminder checker for call status tracking
@@ -123,6 +131,21 @@ Be warm, patient, and supportive. If there's a reminder due, mention it naturall
                 handler = make_handler(agent)
                 self.gemini_client.register_function(declaration, handler)
                 logger.info(f"Registered function: {fn_name} -> {agent.name}")
+            elif fn_name == "get_current_time":
+                # Special handler for get_current_time
+                async def get_time_handler(args):
+                    from datetime import datetime
+                    now = datetime.now()
+                    current_time = now.strftime("%I:%M %p")
+                    current_date = now.strftime("%A, %B %d, %Y")
+                    return {
+                        "time": current_time,
+                        "date": current_date,
+                        "message": f"The current time is {current_time} on {current_date}"
+                    }
+                
+                self.gemini_client.register_function(declaration, get_time_handler)
+                logger.info(f"Registered function: {fn_name} -> time utility")
         
         logger.info(f"Registered {len(function_map)} sub-agents")
     

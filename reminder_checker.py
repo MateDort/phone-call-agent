@@ -11,16 +11,18 @@ logger = logging.getLogger(__name__)
 class ReminderChecker:
     """Checks for due reminders and triggers notifications/calls."""
     
-    def __init__(self, db: Database, call_trigger: Optional[Callable] = None):
+    def __init__(self, db: Database, call_trigger: Optional[Callable] = None, gemini_client=None):
         """Initialize reminder checker.
         
         Args:
             db: Database instance
             call_trigger: Async function to call when reminder is due
                          Should accept (reminder_dict) and make phone call
+            gemini_client: GeminiLiveClient instance for sending in-call reminders
         """
         self.db = db
         self.call_trigger = call_trigger
+        self.gemini_client = gemini_client
         self.running = False
         self.in_phone_call = False
         self.check_interval = 60  # Check every 60 seconds
@@ -133,10 +135,20 @@ class ReminderChecker:
         if self.in_phone_call:
             # User is already on the phone, announce it during the call
             logger.info(f"User in call - reminder will be announced: {title}")
-            # The main agent will check for due reminders during the call
+            
+            # Send reminder to Gemini to announce during the call
+            if self.gemini_client and self.gemini_client.is_connected:
+                try:
+                    reminder_msg = f"IMPORTANT: You need to announce this reminder to the user right now: {title}"
+                    await self.gemini_client.send_text(reminder_msg, end_of_turn=True)
+                    logger.info(f"Sent in-call reminder to Gemini: {title}")
+                except Exception as e:
+                    logger.error(f"Error sending in-call reminder: {e}")
+            
             # Mark as complete since it's being announced
             if not reminder['recurrence']:
                 self.db.mark_reminder_complete(reminder_id)
+                logger.info(f"Marked non-recurring reminder {reminder_id} as complete after in-call announcement")
         else:
             # User not on call - trigger an outbound call
             logger.info(f"User not in call - triggering call for reminder: {title}")

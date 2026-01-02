@@ -155,12 +155,6 @@ Be conversational, friendly, and helpful."""
             audio_data: Raw audio bytes
             mime_type: Audio format (default: audio/pcm for μ-law)
         """
-        # #region agent log
-        import json, time as time_module
-        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"gemini_live_client.py:178","message":"send_audio called","data":{"audio_length":len(audio_data),"is_connected":self.is_connected,"has_session":bool(self.session)},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H3"})+"\n")
-        # #endregion
-        
         if not self.session or not self.is_connected:
             raise RuntimeError("Not connected to Gemini Live")
         
@@ -169,16 +163,7 @@ Be conversational, friendly, and helpful."""
                 input={"data": audio_data, "mime_type": mime_type},
                 end_of_turn=False
             )
-            
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"location":"gemini_live_client.py:194","message":"Audio sent to Gemini","data":{"end_of_turn":False},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H1,H3"})+"\n")
-            # #endregion
         except Exception as e:
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"location":"gemini_live_client.py:200","message":"Error sending audio","data":{"error":str(e)},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H3"})+"\n")
-            # #endregion
             logger.error(f"Error sending audio: {e}")
             raise
     
@@ -203,28 +188,12 @@ Be conversational, friendly, and helpful."""
     
     async def _receive_loop(self):
         """Main loop for receiving responses from Gemini."""
-        # #region agent log
-        import json, time as time_module
-        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"gemini_live_client.py:216","message":"Receive loop started","data":{},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H5"})+"\n")
-        # #endregion
-        
         try:
             while self.is_connected:
                 try:
                     async for response in self.session.receive():
-                        # #region agent log
-                        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                            f.write(json.dumps({"location":"gemini_live_client.py:224","message":"Response received from Gemini","data":{"has_data":bool(response.data),"has_tool_call":bool(response.tool_call),"has_server_content":bool(response.server_content)},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H4"})+"\n")
-                        # #endregion
-                        
                         # Handle audio output
                         if response.data:
-                            # #region agent log
-                            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                                f.write(json.dumps({"location":"gemini_live_client.py:232","message":"Audio response from Gemini","data":{"audio_length":len(response.data)},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H4"})+"\n")
-                            # #endregion
-                            
                             if self.on_audio_response:
                                 await self.on_audio_response(response.data)
                         
@@ -250,34 +219,15 @@ Be conversational, friendly, and helpful."""
                     
                     # If we reach here, the async for loop completed naturally (iterator exhausted)
                     # This happens when Gemini finishes a turn. Continue the while loop to keep listening.
-                    # #region agent log
-                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"location":"gemini_live_client.py:257","message":"Iterator exhausted, continuing to listen","data":{},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H5"})+"\n")
-                    # #endregion
                     await asyncio.sleep(0.1)  # Brief pause before continuing
                     
                 except StopAsyncIteration:
                     # Iterator explicitly stopped, continue
-                    # #region agent log
-                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"location":"gemini_live_client.py:265","message":"StopAsyncIteration, continuing","data":{},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H5"})+"\n")
-                    # #endregion
                     await asyncio.sleep(0.1)
                     
         except Exception as e:
-            # #region agent log
-            import json, time as time_module
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"location":"gemini_live_client.py:273","message":"Receive loop error - LOOP EXITED","data":{"error":str(e),"error_type":type(e).__name__},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H5"})+"\n")
-            # #endregion
-            
             logger.error(f"Error in receive loop: {e}")
             self.is_connected = False
-        
-        # #region agent log
-        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"gemini_live_client.py:282","message":"Receive loop ended normally","data":{},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H2,H5"})+"\n")
-        # #endregion
     
     async def _handle_function_calls(self, tool_call):
         """Handle function calls from Gemini.

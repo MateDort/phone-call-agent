@@ -114,6 +114,14 @@ class TwilioMediaStreamsHandler:
             # Connect to Gemini Live
             await self.gemini_client.connect()
             
+            # Send current time to Gemini for accurate time awareness (silently in system context)
+            from datetime import datetime
+            current_time = datetime.now().strftime("%I:%M %p")
+            current_date = datetime.now().strftime("%A, %B %d, %Y")
+            time_msg = f"[System: Current time is {current_time} on {current_date}. Use this for any time-related questions or reminders.]"
+            await self.gemini_client.send_text(time_msg, end_of_turn=True)
+            logger.info(f"Sent current time context to Gemini: {current_time} on {current_date}")
+            
             # If this is a reminder call, send the reminder message to Gemini
             if self.pending_reminder:
                 reminder_msg = f"You need to announce this reminder to the user: {self.pending_reminder}"
@@ -178,12 +186,6 @@ class TwilioMediaStreamsHandler:
                             self.reminder_checker.set_in_call(True)
                     
                     elif event == 'media':
-                        # #region agent log
-                        import time as time_module
-                        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                            f.write(json.dumps({"location":"twilio_media_streams.py:169","message":"Media event received from Twilio","data":{"payload_length":len(data['media']['payload'])},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H3,H5"})+"\n")
-                        # #endregion
-                        
                         # Audio from caller
                         payload = data['media']['payload']
                         
@@ -205,12 +207,6 @@ class TwilioMediaStreamsHandler:
                                 24000,  # output rate (24kHz for Gemini)
                                 None    # state
                             )
-                            
-                            # #region agent log
-                            import time as time_module
-                            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                                f.write(json.dumps({"location":"twilio_media_streams.py:196","message":"Audio converted, sending to Gemini","data":{"pcm_24k_length":len(pcm_24k)},"timestamp":int(time_module.time()*1000),"sessionId":"debug-session","hypothesisId":"H3,H5"})+"\n")
-                            # #endregion
                             
                             # Send to Gemini with correct format
                             await self.gemini_client.send_audio(
