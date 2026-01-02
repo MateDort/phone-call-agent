@@ -36,6 +36,10 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
         'no_birthdays_today': "No birthdays today",
         'today_is_birthday': "Today is {name}'s birthday!",
         'unknown_contact_action': "Unknown contact action",
+        'contact_added': "Contact added",
+        'contact_updated': "Contact updated",
+        'contact_not_found': "Contact not found",
+        'couldnt_find_contact': "I couldn't find that contact",
         
         # Notification Agent
         'phone_call_scheduled': "Phone call notification scheduled",
@@ -99,6 +103,10 @@ Légy beszélgetős és segítőkész. Amikor lehetséges, 1-2 mondatban válasz
         'no_birthdays_today': "Ma nincs születésnap",
         'today_is_birthday': "Ma van {name} születésnapja!",
         'unknown_contact_action': "Ismeretlen névjegy művelet",
+        'contact_added': "Névjegy hozzáadva",
+        'contact_updated': "Névjegy frissítve",
+        'contact_not_found': "Névjegy nem található",
+        'couldnt_find_contact': "Nem találtam ezt a névjegyet",
         
         # Notification Agent
         'phone_call_scheduled': "Telefonhívás értesítés ütemezve",

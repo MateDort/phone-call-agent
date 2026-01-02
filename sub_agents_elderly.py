@@ -135,37 +135,84 @@ class ReminderAgent(SubAgent):
             return get_text('couldnt_find_reminder', Config.LANGUAGE)
     
     async def _edit_reminder(self, args: Dict[str, Any]) -> str:
-        """Edit a reminder."""
-        old_time = args.get("old_time", "")
-        new_time = args.get("new_time", "")
-        
-        # Find reminder by old time
+        """Edit a reminder - can update title, time, or both."""
+        # Find reminder by title or time
         reminders = self.db.get_reminders(active_only=True)
         match = None
         
+        # Try to find by title first
+        title = args.get("title", "")
+        old_title = args.get("old_title", "")
+        old_time = args.get("old_time", "")
+        
+        search_title = old_title or title
+        
         for r in reminders:
-            reminder_time = datetime.fromisoformat(r['datetime'])
-            if old_time in reminder_time.strftime('%I %p').lower():
+            # Match by title
+            if search_title and search_title.lower() in r['title'].lower():
                 match = r
                 break
+            
+            # Match by time
+            if old_time:
+                reminder_time = datetime.fromisoformat(r['datetime'])
+                time_str = reminder_time.strftime('%I:%M %p').lower()
+                if old_time.lower() in time_str or old_time.lower() in reminder_time.strftime('%I %p').lower():
+                    match = r
+                    break
         
         if not match:
-            return f"{get_text('couldnt_find_reminder', Config.LANGUAGE)} {get_text('at', Config.LANGUAGE)} {old_time}"
+            search_term = search_title or old_time or "reminder"
+            return f"{get_text('couldnt_find_reminder', Config.LANGUAGE)}: {search_term}"
         
-        # Parse new time
-        parsed = self._parse_time(new_time)
-        if not parsed:
-            return f"{get_text('time_parse_error', Config.LANGUAGE)} '{new_time}'"
+        # Prepare updates
+        updates = {}
+        
+        # Update title if provided
+        new_title = args.get("new_title", "")
+        if new_title:
+            updates["title"] = new_title
+        elif "title" in args and args["title"] and args["title"] != match['title']:
+            updates["title"] = args["title"]
+        
+        # Update time if provided
+        new_time = args.get("new_time", "")
+        time_str = args.get("time", "")
+        if new_time or time_str:
+            time_to_parse = new_time or time_str
+            parsed = self._parse_time(time_to_parse)
+            if not parsed:
+                return f"{get_text('time_parse_error', Config.LANGUAGE)} '{time_to_parse}'"
+            
+            updates["datetime"] = parsed['datetime'].isoformat()
+            if parsed.get('recurrence'):
+                updates["recurrence"] = parsed['recurrence']
+            if parsed.get('days_of_week'):
+                updates["days_of_week"] = parsed['days_of_week']
+        
+        if not updates:
+            return "No changes specified for the reminder"
         
         # Update reminder
-        self.db.update_reminder(
-            match['id'],
-            datetime=parsed['datetime'].isoformat(),
-            recurrence=parsed.get('recurrence'),
-            days_of_week=parsed.get('days_of_week')
-        )
+        self.db.update_reminder(match['id'], **updates)
         
-        return f"{get_text('reminder_updated', Config.LANGUAGE)} {get_text('from', Config.LANGUAGE)} {old_time} {get_text('to', Config.LANGUAGE)} {new_time}"
+        logger.info(f"Updated reminder {match['id']}: {updates}")
+        
+        # Get updated reminder for response
+        updated = self.db.get_reminder(match['id'])
+        if updated:
+            reminder_time = datetime.fromisoformat(updated['datetime'])
+            time_str = reminder_time.strftime('%I:%M %p on %B %d, %Y')
+            
+            recurrence_text = ""
+            if updated['recurrence'] == 'daily':
+                recurrence_text = f" {get_text('every_day', Config.LANGUAGE)}"
+            elif updated['recurrence'] == 'weekly' and updated['days_of_week']:
+                recurrence_text = f" {get_text('every', Config.LANGUAGE)} {updated['days_of_week']}"
+            
+            return f"{get_text('reminder_updated', Config.LANGUAGE)}: {updated['title']} {get_text('at', Config.LANGUAGE)} {time_str}{recurrence_text}"
+        
+        return f"{get_text('reminder_updated', Config.LANGUAGE)}"
     
     def _parse_time(self, time_str: str) -> Dict:
         """Parse time string into datetime and recurrence.
@@ -317,8 +364,14 @@ class ContactsAgent(SubAgent):
         
         Args:
             args: {
-                "action": "lookup|list|birthday_check",
-                "name": str
+                "action": "lookup|list|birthday_check|add|edit",
+                "name": str,
+                "relation": str (optional),
+                "phone": str (optional),
+                "birthday": str (optional, YYYY-MM-DD format),
+                "notes": str (optional),
+                "old_name": str (for edit - name to find),
+                "new_name": str (for edit - new name)
             }
         """
         action = args.get("action", "lookup")
@@ -363,8 +416,103 @@ class ContactsAgent(SubAgent):
             
             return "\n".join(upcoming) if upcoming else get_text('no_birthdays_today', Config.LANGUAGE)
         
+        elif action == "add":
+            return await self._add_contact(args)
+        
+        elif action == "edit":
+            return await self._edit_contact(args)
+        
         else:
             return f"{get_text('unknown_contact_action', Config.LANGUAGE)}: {action}"
+    
+    async def _add_contact(self, args: Dict[str, Any]) -> str:
+        """Add a new contact."""
+        name = args.get("name", "")
+        if not name:
+            return "Please provide a name for the contact"
+        
+        relation = args.get("relation")
+        phone = args.get("phone")
+        birthday = args.get("birthday")
+        notes = args.get("notes")
+        
+        # Check if contact already exists
+        existing = self.db.search_contact(name)
+        if existing:
+            return f"A contact named {name} already exists. Use edit to update it."
+        
+        # Add contact
+        contact_id = self.db.add_contact(
+            name=name,
+            relation=relation,
+            phone=phone,
+            birthday=birthday,
+            notes=notes
+        )
+        
+        logger.info(f"Added contact {contact_id}: {name}")
+        
+        # Build response
+        info = [f"{get_text('contact_added', Config.LANGUAGE)}: {name}"]
+        if relation:
+            info.append(f"{get_text('relation', Config.LANGUAGE)}: {relation}")
+        if phone:
+            info.append(f"{get_text('phone', Config.LANGUAGE)}: {phone}")
+        if birthday:
+            info.append(f"{get_text('birthday', Config.LANGUAGE)}: {self._format_birthday(birthday)}")
+        
+        return "\n".join(info)
+    
+    async def _edit_contact(self, args: Dict[str, Any]) -> str:
+        """Edit an existing contact."""
+        # Find contact by name (old_name or name)
+        old_name = args.get("old_name") or args.get("name", "")
+        if not old_name:
+            return get_text('couldnt_find_contact', Config.LANGUAGE)
+        
+        contact = self.db.search_contact(old_name)
+        if not contact:
+            return f"{get_text('couldnt_find_contact', Config.LANGUAGE)}: {old_name}"
+        
+        # Prepare update fields
+        updates = {}
+        if "new_name" in args and args["new_name"]:
+            updates["name"] = args["new_name"]
+        elif "name" in args and args["name"] and args["name"] != old_name:
+            updates["name"] = args["name"]
+        
+        if "relation" in args:
+            updates["relation"] = args["relation"]
+        if "phone" in args:
+            updates["phone"] = args["phone"]
+        if "birthday" in args:
+            updates["birthday"] = args["birthday"]
+        if "notes" in args:
+            updates["notes"] = args["notes"]
+        
+        if not updates:
+            return "No changes specified"
+        
+        # Update contact
+        self.db.update_contact(contact['id'], **updates)
+        
+        logger.info(f"Updated contact {contact['id']}: {updates}")
+        
+        # Return updated contact info
+        updated_contact = self.db.get_contacts()
+        updated = next((c for c in updated_contact if c['id'] == contact['id']), None)
+        
+        if updated:
+            info = [f"{get_text('contact_updated', Config.LANGUAGE)}: {updated['name']}"]
+            if updated['relation']:
+                info.append(f"{get_text('relation', Config.LANGUAGE)}: {updated['relation']}")
+            if updated['phone']:
+                info.append(f"{get_text('phone', Config.LANGUAGE)}: {updated['phone']}")
+            if updated['birthday']:
+                info.append(f"{get_text('birthday', Config.LANGUAGE)}: {self._format_birthday(updated['birthday'])}")
+            return "\n".join(info)
+        
+        return f"{get_text('contact_updated', Config.LANGUAGE)}: {old_name}"
     
     def _format_birthday(self, birthday_str: str) -> str:
         """Format birthday string nicely."""
@@ -487,7 +635,7 @@ def get_function_declarations() -> list:
     return [
         {
             "name": "manage_reminder",
-            "description": "Create, list, delete, or edit reminders. Supports recurring reminders (daily, weekly). Examples: 'remind me to take my pill every day at 3pm', 'what reminders do I have', 'delete my 8am reminder', 'change 9am reminder to 10am'",
+            "description": "Create, list, delete, or edit reminders. Supports recurring reminders (daily, weekly). Examples: 'remind me to take my pill every day at 3pm', 'what reminders do I have', 'delete my 8am reminder', 'change the 9am reminder to 10am', 'edit my pill reminder title to take medication', 'change my 3pm reminder time to 4pm'",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
@@ -497,19 +645,27 @@ def get_function_declarations() -> list:
                     },
                     "title": {
                         "type": "STRING",
-                        "description": "Reminder description (e.g., 'take my pill')"
+                        "description": "Reminder description (e.g., 'take my pill'). For edit: can be used to find reminder or set new title"
                     },
                     "time": {
                         "type": "STRING",
-                        "description": "When to remind: '3pm', 'tomorrow at 8am', 'every day at 1pm', 'every monday at 2pm'"
+                        "description": "When to remind: '3pm', 'tomorrow at 8am', 'every day at 1pm', 'every monday at 2pm'. For edit: new time for the reminder"
+                    },
+                    "old_title": {
+                        "type": "STRING",
+                        "description": "For edit: the current title/name of the reminder to find"
                     },
                     "old_time": {
                         "type": "STRING",
-                        "description": "For edit: the current time of the reminder"
+                        "description": "For edit: the current time of the reminder to find (e.g., '9am', '3pm')"
+                    },
+                    "new_title": {
+                        "type": "STRING",
+                        "description": "For edit: the new title/name for the reminder"
                     },
                     "new_time": {
                         "type": "STRING",
-                        "description": "For edit: the new time for the reminder"
+                        "description": "For edit: the new time for the reminder (e.g., '10am', 'tomorrow at 2pm')"
                     }
                 },
                 "required": ["action"]
@@ -531,17 +687,41 @@ def get_function_declarations() -> list:
         },
         {
             "name": "lookup_contact",
-            "description": "Look up family and friends contact information including phone numbers, birthdays, and relationships. Can also check for birthdays today.",
+            "description": "Look up, add, edit, or manage family and friends contact information including phone numbers, birthdays, and relationships. Examples: 'what is Helen's phone number', 'add a new contact named Harry relationship friend phone number 555-1234', 'edit Harry's phone number to 555-5678', 'search for the hospital and save it as a contact'",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
                     "action": {
                         "type": "STRING",
-                        "description": "Action: lookup (find specific contact), list (all contacts), or birthday_check (check today's birthdays)"
+                        "description": "Action: lookup (find specific contact), list (all contacts), birthday_check (check today's birthdays), add (create new contact), or edit (update existing contact)"
                     },
                     "name": {
                         "type": "STRING",
-                        "description": "Contact name to look up"
+                        "description": "Contact name. For lookup/add: the name. For edit: can be used to find contact or set new name"
+                    },
+                    "relation": {
+                        "type": "STRING",
+                        "description": "Relationship (e.g., 'friend', 'doctor', 'family'). For add/edit actions"
+                    },
+                    "phone": {
+                        "type": "STRING",
+                        "description": "Phone number. For add/edit actions"
+                    },
+                    "birthday": {
+                        "type": "STRING",
+                        "description": "Birthday in YYYY-MM-DD format (e.g., '2004-08-27'). For add/edit actions"
+                    },
+                    "notes": {
+                        "type": "STRING",
+                        "description": "Additional notes about the contact. For add/edit actions"
+                    },
+                    "old_name": {
+                        "type": "STRING",
+                        "description": "For edit: the current name of the contact to find"
+                    },
+                    "new_name": {
+                        "type": "STRING",
+                        "description": "For edit: the new name for the contact"
                     }
                 },
                 "required": ["action"]
