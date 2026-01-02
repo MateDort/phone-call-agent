@@ -60,9 +60,6 @@ class ElderlyPhoneAgent:
             system_instruction=system_instruction
         )
         
-        # Register sub-agents
-        self._register_sub_agents()
-        
         # Initialize reminder checker (will be passed to Twilio handler)
         self.reminder_checker = ReminderChecker(
             db=self.db,
@@ -70,11 +67,26 @@ class ElderlyPhoneAgent:
             gemini_client=self.gemini_client
         )
         
-        # Initialize Twilio handler with reminder checker for call status tracking
+        # Initialize Twilio handler with reminder checker and database for call status tracking
         self.twilio_handler = TwilioMediaStreamsHandler(
             self.gemini_client,
-            reminder_checker=self.reminder_checker
+            reminder_checker=self.reminder_checker,
+            database=self.db
         )
+        
+        # Initialize messaging handler for SMS/WhatsApp
+        from messaging_handler import MessagingHandler
+        self.messaging_handler = MessagingHandler(
+            gemini_client=self.gemini_client,
+            database=self.db,
+            twilio_client=self.twilio_handler.twilio_client
+        )
+        
+        # Pass messaging handler to Twilio handler for webhook access
+        self.twilio_handler.messaging_handler = self.messaging_handler
+        
+        # Register sub-agents (including message agent)
+        self._register_sub_agents()
         
         # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -88,8 +100,8 @@ class ElderlyPhoneAgent:
         """Register all sub-agents with the Gemini client."""
         logger.info("Registering sub-agents...")
         
-        # Get all agents (pass database)
-        agents = get_all_agents(self.db)
+        # Get all agents (pass database and messaging handler)
+        agents = get_all_agents(self.db, self.messaging_handler)
         
         # Get function declarations
         declarations = get_function_declarations()
@@ -100,12 +112,18 @@ class ElderlyPhoneAgent:
             "lookup_user_info": agents["user_bio"],
             "lookup_contact": agents["contacts"],
             "send_notification": agents["notification"],
+            "send_message": agents.get("message"),  # May be None if messaging not available
         }
         
         for declaration in declarations:
             fn_name = declaration["name"]
             if fn_name in function_map:
                 agent = function_map[fn_name]
+                
+                # Skip if agent is None (e.g., message agent when messaging not available)
+                if agent is None:
+                    logger.warning(f"Skipping function {fn_name} - agent not available")
+                    continue
                 
                 # Create wrapper handler
                 def make_handler(agent_instance):

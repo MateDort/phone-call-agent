@@ -80,10 +80,27 @@ Google search built in and we dont need calculate agent gemini is smart enough t
 
 
 All information can be saved locally into DBs 
-
+----------------------------------------------------- Done ----------------------------------------------------------------------
 
 Update:
 - making the system be able to send messages and call you on asking like "call me" or me being able to call the system
+idea: 
+- system can not just be called but messaged as well so user can send messages to the system if cannot call or needs quick response. 
+
+- every conversation wether phone call or message can appear in the messages so user knows what they discussied in the phone call as well. it can be flagged with via phone call or via message at the and of the message like:
+AI assistant: hey how are you? - via phone call 
+User: great how about you? - via phone call
+user: can you tell me the weather in kisapostag? - via messages 
+
+it should be saved into the messages so know extra web interface. It already is available via phone call but it would be nice if every conversation would be visible to the user in the messages app. we already save the conversations to a local db so it should work. 
+
+- if user in the phone call and wants a link to be sent to them (like a youtube video, website or source) the system can trigger messages function and send the link to the user 
+example:
+assistant: I found some plane ticket options to Budapest from atlanta they start from 500 dollars.
+user: can you send me those links?
+assistant: yeah sure.
+
+explain what options we have? how does whatsapp work would it just work via twillio api? 
 
 Update:
 - lets add in capebility to turn on the camera and be able to show it thinks.

@@ -41,6 +41,11 @@ class Config:
     # Audio Configuration
     AUDIO_SAMPLE_RATE = int(os.getenv('AUDIO_SAMPLE_RATE', '8000'))  # Twilio uses 8kHz μ-law
     
+    # Messaging Configuration
+    ENABLE_SMS = os.getenv('ENABLE_SMS', 'true').lower() == 'true'
+    ENABLE_WHATSAPP = os.getenv('ENABLE_WHATSAPP', 'true').lower() == 'true'
+    WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '')  # Format: whatsapp:+1234567890
+    
     @classmethod
     def validate(cls):
         """Validate that required configuration is present."""

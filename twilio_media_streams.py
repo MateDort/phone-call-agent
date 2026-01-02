@@ -19,18 +19,20 @@ logger = logging.getLogger(__name__)
 class TwilioMediaStreamsHandler:
     """Handles Twilio Media Streams WebSocket connection with Gemini Live."""
     
-    def __init__(self, gemini_client: GeminiLiveClient, reminder_checker=None):
+    def __init__(self, gemini_client: GeminiLiveClient, reminder_checker=None, database=None):
         """Initialize handler.
         
         Args:
             gemini_client: GeminiLiveClient instance
             reminder_checker: Optional ReminderChecker instance for call status updates
+            database: Optional Database instance for conversation logging
         """
         self.gemini_client = gemini_client
         self.twilio_client = Client(Config.TWILIO_ACCOUNT_SID, Config.TWILIO_AUTH_TOKEN)
         self.app = Flask(__name__)
         self._setup_routes()
         self.reminder_checker = reminder_checker
+        self.db = database
         
         # WebSocket state
         self.websocket_server = None
@@ -101,6 +103,130 @@ class TwilioMediaStreamsHandler:
                     del self.active_connections[call_sid]
             
             return Response('', mimetype='text/xml')
+        
+        @self.app.route('/webhook/sms', methods=['POST'])
+        def sms_webhook():
+            """Handle incoming SMS messages."""
+            # #region debug log
+            try:
+                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
+                    import json
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"twilio_media_streams.py:sms_webhook:entry","message":"SMS webhook called","data":{"has_messaging_handler":hasattr(self,'messaging_handler'),"event_loop_running":asyncio.get_running_loop() if asyncio._get_running_loop() else None},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+            except: pass
+            # #endregion
+            
+            from_number = request.form.get('From')
+            message_body = request.form.get('Body')
+            message_sid = request.form.get('MessageSid')
+            
+            logger.info(f"Received SMS from {from_number}: {message_body}")
+            
+            # Process message asynchronously if messaging handler is available
+            if hasattr(self, 'messaging_handler') and self.messaging_handler:
+                # #region debug log
+                try:
+                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
+                        import json
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"twilio_media_streams.py:sms_webhook:before_create_task","message":"Attempting create_task","data":{"has_loop":asyncio._get_running_loop() is not None},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+                except: pass
+                # #endregion
+                
+                # Create async task to process message
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    # No running loop - need to run in new event loop
+                    # #region debug log
+                    try:
+                        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
+                            import json
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"twilio_media_streams.py:sms_webhook:no_loop","message":"No running event loop detected","data":{},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+                    except: pass
+                    # #endregion
+                    
+                    # Run async function in new event loop using thread pool
+                    import threading
+                    def run_async():
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        try:
+                            new_loop.run_until_complete(
+                                self.messaging_handler.process_incoming_message(
+                                    from_number=from_number,
+                                    message_body=message_body,
+                                    medium='sms',
+                                    message_sid=message_sid
+                                )
+                            )
+                        finally:
+                            new_loop.close()
+                    
+                    thread = threading.Thread(target=run_async, daemon=True)
+                    thread.start()
+                else:
+                    # Running loop exists - can use create_task
+                    asyncio.create_task(
+                        self.messaging_handler.process_incoming_message(
+                            from_number=from_number,
+                            message_body=message_body,
+                            medium='sms',
+                            message_sid=message_sid
+                        )
+                    )
+            else:
+                logger.warning("MessagingHandler not initialized - cannot process SMS")
+            
+            # Return empty response (Twilio will receive reply separately)
+            return Response('', status=200)
+        
+        @self.app.route('/webhook/whatsapp', methods=['POST'])
+        def whatsapp_webhook():
+            """Handle incoming WhatsApp messages."""
+            from_number = request.form.get('From')
+            message_body = request.form.get('Body')
+            message_sid = request.form.get('MessageSid')
+            
+            logger.info(f"Received WhatsApp from {from_number}: {message_body}")
+            
+            # Process message asynchronously if messaging handler is available
+            if hasattr(self, 'messaging_handler') and self.messaging_handler:
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    # No running loop - need to run in new event loop
+                    import threading
+                    def run_async():
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        try:
+                            new_loop.run_until_complete(
+                                self.messaging_handler.process_incoming_message(
+                                    from_number=from_number,
+                                    message_body=message_body,
+                                    medium='whatsapp',
+                                    message_sid=message_sid
+                                )
+                            )
+                        finally:
+                            new_loop.close()
+                    
+                    thread = threading.Thread(target=run_async, daemon=True)
+                    thread.start()
+                else:
+                    # Running loop exists - can use create_task
+                    asyncio.create_task(
+                        self.messaging_handler.process_incoming_message(
+                            from_number=from_number,
+                            message_body=message_body,
+                            medium='whatsapp',
+                            message_sid=message_sid
+                        )
+                    )
+            else:
+                logger.warning("MessagingHandler not initialized - cannot process WhatsApp")
+            
+            # Return empty response
+            return Response('', status=200)
     
     async def handle_media_stream(self, websocket):
         """Handle WebSocket connection from Twilio Media Streams.
@@ -168,6 +294,41 @@ class TwilioMediaStreamsHandler:
                     logger.error(f"Error sending audio to Twilio: {e}")
             
             self.gemini_client.on_audio_response = send_audio_to_twilio
+            
+            # Set up conversation logging callbacks
+            async def log_user_transcript(text: str):
+                """Log user's spoken text to database."""
+                try:
+                    if hasattr(self, 'db') and self.db and text.strip():
+                        self.db.add_conversation_message(
+                            sender='user',
+                            message=text,
+                            medium='phone_call',
+                            call_sid=call_sid,
+                            direction='inbound'
+                        )
+                        logger.debug(f"Logged user transcript: {text[:50]}...")
+                except Exception as e:
+                    logger.error(f"Error logging user transcript: {e}")
+            
+            async def log_ai_response(text: str):
+                """Log AI's spoken response to database."""
+                try:
+                    if hasattr(self, 'db') and self.db and text.strip():
+                        self.db.add_conversation_message(
+                            sender='assistant',
+                            message=text,
+                            medium='phone_call',
+                            call_sid=call_sid,
+                            direction='outbound'
+                        )
+                        logger.debug(f"Logged AI response: {text[:50]}...")
+                except Exception as e:
+                    logger.error(f"Error logging AI response: {e}")
+            
+            # Register conversation logging callbacks
+            self.gemini_client.on_user_transcript = log_user_transcript
+            self.gemini_client.on_text_response = log_ai_response
             
             # Process messages from Twilio
             async for message in websocket:

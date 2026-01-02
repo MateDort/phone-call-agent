@@ -375,6 +375,53 @@ class ContactsAgent(SubAgent):
             return birthday_str
 
 
+class MessageAgent(SubAgent):
+    """Agent for sending SMS and WhatsApp messages to the user."""
+    
+    def __init__(self, messaging_handler):
+        super().__init__(
+            name="message_agent",
+            description="Sends SMS/WhatsApp messages and links to the user"
+        )
+        self.messaging_handler = messaging_handler
+    
+    async def execute(self, args: Dict[str, Any]) -> str:
+        """Handle message sending request.
+        
+        Args:
+            args: {
+                "action": "send" or "send_link",
+                "message": str (message text or link description),
+                "link": str (URL for send_link action),
+                "medium": "sms" or "whatsapp"
+            }
+        """
+        action = args.get("action", "send")
+        message = args.get("message", "")
+        link = args.get("link", "")
+        medium = args.get("medium", "sms")
+        
+        logger.info(f"MessageAgent: {action} via {medium}")
+        
+        if action == "send_link":
+            # Send a link with optional description
+            self.messaging_handler.send_link(
+                to_number=Config.TARGET_PHONE_NUMBER,
+                url=link,
+                description=message,
+                medium=medium
+            )
+            return f"Link sent via {medium}"
+        else:
+            # Send regular message
+            self.messaging_handler.send_message(
+                to_number=Config.TARGET_PHONE_NUMBER,
+                message_body=message,
+                medium=medium
+            )
+            return f"Message sent via {medium}"
+
+
 class NotificationAgent(SubAgent):
     """Handles notifications and can trigger phone calls."""
     
@@ -407,21 +454,28 @@ class NotificationAgent(SubAgent):
 
 
 # Agent registry
-def get_all_agents(db: Database) -> Dict[str, SubAgent]:
+def get_all_agents(db: Database, messaging_handler=None) -> Dict[str, SubAgent]:
     """Get all available sub-agents.
     
     Args:
         db: Database instance
+        messaging_handler: Optional MessagingHandler instance for MessageAgent
     
     Returns:
         Dictionary of agent_name -> agent_instance
     """
-    return {
+    agents = {
         "reminder": ReminderAgent(db),
         "user_bio": UserBioAgent(db),
         "contacts": ContactsAgent(db),
         "notification": NotificationAgent(),
     }
+    
+    # Add message agent if messaging_handler is provided
+    if messaging_handler:
+        agents["message"] = MessageAgent(messaging_handler)
+    
+    return agents
 
 
 def get_function_declarations() -> list:
@@ -518,6 +572,32 @@ def get_function_declarations() -> list:
                 "type": "OBJECT",
                 "properties": {},
                 "required": []
+            }
+        },
+        {
+            "name": "send_message",
+            "description": "Send a text message or link to the user via SMS or WhatsApp. Use this when user requests links during phone calls or to send follow-up information.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {
+                        "type": "STRING",
+                        "description": "Action: 'send' (text message) or 'send_link' (send URL)"
+                    },
+                    "message": {
+                        "type": "STRING",
+                        "description": "Message text or link description"
+                    },
+                    "link": {
+                        "type": "STRING",
+                        "description": "URL to send (for send_link action)"
+                    },
+                    "medium": {
+                        "type": "STRING",
+                        "description": "Communication medium: 'sms' or 'whatsapp' (default: sms)"
+                    }
+                },
+                "required": ["action", "message"]
             }
         }
     ]

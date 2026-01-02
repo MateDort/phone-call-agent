@@ -62,6 +62,21 @@ class Database:
                 )
             """)
             
+            # Create conversations table
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS conversations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    sender TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    medium TEXT NOT NULL,
+                    call_sid TEXT,
+                    message_sid TEXT,
+                    direction TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
             self.conn.commit()
             logger.info(f"Database initialized at {self.db_path}")
             
@@ -345,6 +360,92 @@ class Database:
         else:
             cursor = self.conn.execute("SELECT * FROM user_bio")
             return {row['key']: row['value'] for row in cursor.fetchall()}
+    
+    # ==================== CONVERSATIONS ====================
+    
+    def add_conversation_message(self, sender: str, message: str, medium: str,
+                                 call_sid: str = None, message_sid: str = None,
+                                 direction: str = None) -> int:
+        """Add a conversation message to the database.
+        
+        Args:
+            sender: 'user' or 'assistant'
+            message: Message text
+            medium: 'phone_call', 'sms', or 'whatsapp'
+            call_sid: Twilio call SID (for phone calls)
+            message_sid: Twilio message SID (for SMS/WhatsApp)
+            direction: 'inbound' or 'outbound'
+            
+        Returns:
+            Conversation message ID
+        """
+        timestamp = datetime.now().isoformat()
+        cursor = self.conn.execute(
+            """INSERT INTO conversations 
+               (timestamp, sender, message, medium, call_sid, message_sid, direction) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (timestamp, sender, message, medium, call_sid, message_sid, direction)
+        )
+        self.conn.commit()
+        return cursor.lastrowid
+    
+    def get_recent_conversations(self, limit: int = 20) -> List[Dict]:
+        """Get recent conversation messages.
+        
+        Args:
+            limit: Maximum number of messages to retrieve
+            
+        Returns:
+            List of conversation dictionaries
+        """
+        cursor = self.conn.execute(
+            "SELECT * FROM conversations ORDER BY timestamp DESC LIMIT ?",
+            (limit,)
+        )
+        messages = [dict(row) for row in cursor.fetchall()]
+        return list(reversed(messages))  # Return oldest first
+    
+    def get_conversation_context(self, limit: int = 10) -> str:
+        """Get recent conversation context as formatted text.
+        
+        Args:
+            limit: Number of recent messages to include
+            
+        Returns:
+            Formatted conversation context string
+        """
+        messages = self.get_recent_conversations(limit)
+        if not messages:
+            return ""
+        
+        context_lines = []
+        for msg in messages:
+            sender_label = "User" if msg['sender'] == 'user' else "Assistant"
+            medium_label = msg['medium'].replace('_', ' ')
+            context_lines.append(
+                f"{sender_label}: {msg['message']} (via {medium_label})"
+            )
+        
+        return "\n".join(context_lines)
+    
+    def get_conversations_by_medium(self, medium: str, limit: int = 50) -> List[Dict]:
+        """Get conversations filtered by medium.
+        
+        Args:
+            medium: 'phone_call', 'sms', or 'whatsapp'
+            limit: Maximum number of messages to retrieve
+            
+        Returns:
+            List of conversation dictionaries
+        """
+        cursor = self.conn.execute(
+            """SELECT * FROM conversations 
+               WHERE medium = ? 
+               ORDER BY timestamp DESC LIMIT ?""",
+            (medium, limit)
+        )
+        messages = [dict(row) for row in cursor.fetchall()]
+        return list(reversed(messages))
     
     def close(self):
         """Close database connection."""

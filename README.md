@@ -123,6 +123,87 @@ python main_elderly.py
 ./start_elderly.sh
 ```
 
+## 📱 SMS & WhatsApp Setup (Optional)
+
+The system supports bidirectional SMS and WhatsApp messaging, allowing you to text the AI assistant and receive messages during phone calls.
+
+### Enable SMS Messaging
+
+1. **Configure Twilio SMS Webhook:**
+   - Go to [Twilio Console](https://console.twilio.com/)
+   - Navigate to **Phone Numbers** → **Manage** → **Active numbers**
+   - Click on your phone number
+   - Scroll to **Messaging Configuration**
+   - Under "A MESSAGE COMES IN", set:
+     - Webhook URL: `https://your-ngrok-url/webhook/sms`
+     - HTTP Method: `POST`
+   - Click **Save**
+
+2. **Test SMS:**
+   - Text your Twilio phone number from your mobile
+   - The AI assistant will respond via SMS
+   - All conversations are logged to the database
+
+### Enable WhatsApp Messaging
+
+1. **Setup WhatsApp Business (if not already done):**
+   - Go to [Twilio Console](https://console.twilio.com/)
+   - Navigate to **Messaging** → **Try it out** → **Send a WhatsApp message**
+   - Follow Twilio's guide to set up WhatsApp Business
+   - Note your WhatsApp-enabled number (format: `whatsapp:+1234567890`)
+
+2. **Configure WhatsApp Webhook:**
+   - In Twilio Console, go to **Messaging** → **Settings** → **WhatsApp sandbox settings**
+   - Set "When a message comes in" webhook to: `https://your-ngrok-url/webhook/whatsapp`
+   - HTTP Method: `POST`
+   - Click **Save**
+
+3. **Update Environment Variables:**
+   ```bash
+   # In your .env file
+   ENABLE_WHATSAPP=true
+   WHATSAPP_NUMBER=whatsapp:+1234567890  # Your WhatsApp Business number
+   ```
+
+4. **Test WhatsApp:**
+   - Send "join [your-sandbox-keyword]" to your Twilio WhatsApp number
+   - Once joined, send any message
+   - The AI assistant will respond via WhatsApp
+
+### Features
+
+- **Bidirectional messaging**: Text the AI and get intelligent responses
+- **Unified conversation history**: All phone calls and messages logged together
+- **Send links during calls**: "Send me that link" → Receives SMS/WhatsApp
+- **Context-aware**: AI remembers both phone and text conversations
+- **Multi-platform**: Works with SMS, WhatsApp, or both
+
+### Example Message Flows
+
+**User texts for quick info:**
+```
+User (SMS): "What's the weather?"
+AI (SMS): "Currently 72°F and sunny in Atlanta"
+```
+
+**Send link during phone call:**
+```
+User (Phone): "Find me flights to Budapest"
+AI (Phone): "I found options starting at $500"
+User (Phone): "Can you send me those links?"
+AI (Phone): "Sure, sending them now"
+[User receives SMS with flight links]
+```
+
+**Conversation history (unified):**
+```
+Database shows:
+[10:30 AM] user: "remind me to call Helen" - via phone call
+[10:30 AM] assistant: "Reminder set for 3pm" - via phone call
+[4:15 PM] user: "what's Helen's number?" - via sms
+[4:15 PM] assistant: "Helen's number is 404-953-5533" - via sms
+```
+
 ## 📞 How It Works
 
 ### Automatic Reminder Calls
