@@ -11,6 +11,7 @@ from gemini_live_client import GeminiLiveClient
 from twilio_media_streams import TwilioMediaStreamsHandler
 from sub_agents_elderly import get_all_agents, get_function_declarations
 from reminder_checker import ReminderChecker
+from translations import format_text
 
 # Configure logging
 logging.basicConfig(
@@ -47,27 +48,12 @@ class ElderlyPhoneAgent:
         current_time = datetime.now().strftime("%I:%M %p")
         current_date = datetime.now().strftime("%A, %B %d, %Y")
         
-        system_instruction = f"""You are a helpful AI assistant for an elderly person named Máté.
-
-IMPORTANT: When the call starts, the time is approximately {current_time} on {current_date}. However, time changes during the call. Whenever you need to know the exact current time (for answering time questions, scheduling reminders, etc.), use the get_current_time function to get the precise time.
-
-Your role:
-- Help with medication reminders and daily tasks
-- Provide companionship through friendly conversation
-- Look up contact information for family and friends
-- Answer questions about Máté's life and background
-- Keep responses clear, warm, and easy to understand
-- Speak naturally as if talking to a friend
-
-You have access to:
-- Reminders system (medication, appointments, daily tasks)
-- Contact information for family and friends (with birthdays)
-- Máté's biographical information
-- Google Search for current information
-- get_current_time function - use this to get the exact current time whenever needed
-
-Keep responses concise and conversational - aim for 1-2 sentences unless more detail is needed.
-Be warm, patient, and supportive. If there's a reminder due, mention it naturally in conversation."""
+        system_instruction = format_text(
+            'elderly_system_instruction',
+            Config.LANGUAGE,
+            current_time=current_time,
+            current_date=current_date
+        )
         
         self.gemini_client = GeminiLiveClient(
             api_key=Config.GEMINI_API_KEY,

@@ -31,6 +31,9 @@ class Config:
     # Agent Configuration
     AUTO_CALL = os.getenv('AUTO_CALL', 'false').lower() == 'true'  # Auto-make call on startup
     
+    # Language Configuration
+    LANGUAGE = os.getenv('LANGUAGE', 'english').lower()  # english or hungarian
+    
     # WebSocket Configuration for Media Streams
     WEBSOCKET_PORT = int(os.getenv('WEBSOCKET_PORT', '5001'))
     WEBSOCKET_URL = os.getenv('WEBSOCKET_URL', '')  # Separate ngrok URL for WebSocket

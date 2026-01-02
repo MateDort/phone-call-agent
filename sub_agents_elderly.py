@@ -5,6 +5,8 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 from gemini_live_client import SubAgent
 from database import Database
+from translations import get_text, format_text
+from config import Config
 import re
 
 logger = logging.getLogger(__name__)
@@ -46,7 +48,7 @@ class ReminderAgent(SubAgent):
             return await self._edit_reminder(args)
         
         else:
-            return f"Unknown reminder action: {action}"
+            return f"{get_text('unknown_action', Config.LANGUAGE)}: {action}"
     
     async def _create_reminder(self, args: Dict[str, Any]) -> str:
         """Create a new reminder."""
@@ -56,7 +58,7 @@ class ReminderAgent(SubAgent):
         # Parse time and recurrence
         parsed = self._parse_time(time_str)
         if not parsed:
-            return f"I couldn't understand the time '{time_str}'. Please try again."
+            return f"{get_text('time_parse_error', Config.LANGUAGE)} '{time_str}'. Please try again."
         
         reminder_time = parsed['datetime']
         recurrence = parsed.get('recurrence')
@@ -75,31 +77,31 @@ class ReminderAgent(SubAgent):
         # Build response
         recurrence_text = ""
         if recurrence == "daily":
-            recurrence_text = " every day"
+            recurrence_text = f" {get_text('every_day', Config.LANGUAGE)}"
         elif recurrence == "weekly" and days_of_week:
-            recurrence_text = f" every {days_of_week}"
+            recurrence_text = f" {get_text('every', Config.LANGUAGE)} {days_of_week}"
         
-        return f"Reminder saved: {title} at {reminder_time.strftime('%I:%M %p on %B %d, %Y')}{recurrence_text}"
+        return f"{get_text('reminder_saved', Config.LANGUAGE)}: {title} {get_text('at', Config.LANGUAGE)} {reminder_time.strftime('%I:%M %p on %B %d, %Y')}{recurrence_text}"
     
     async def _list_reminders(self) -> str:
         """List all active reminders."""
         reminders = self.db.get_reminders(active_only=True)
         
         if not reminders:
-            return "You have no reminders set"
+            return get_text('no_reminders', Config.LANGUAGE)
         
-        lines = ["Your reminders:"]
+        lines = [get_text('your_reminders', Config.LANGUAGE)]
         for r in reminders:
             reminder_time = datetime.fromisoformat(r['datetime'])
             time_str = reminder_time.strftime('%I:%M %p on %B %d')
             
             recurrence_text = ""
             if r['recurrence'] == 'daily':
-                recurrence_text = " (every day)"
+                recurrence_text = f" ({get_text('every_day', Config.LANGUAGE)})"
             elif r['recurrence'] == 'weekly' and r['days_of_week']:
-                recurrence_text = f" (every {r['days_of_week']})"
+                recurrence_text = f" ({get_text('every', Config.LANGUAGE)} {r['days_of_week']})"
             
-            lines.append(f"- {r['title']} at {time_str}{recurrence_text}")
+            lines.append(f"- {r['title']} {get_text('at', Config.LANGUAGE)} {time_str}{recurrence_text}")
         
         return "\n".join(lines)
     
@@ -128,9 +130,9 @@ class ReminderAgent(SubAgent):
         
         if match:
             self.db.delete_reminder(match['id'])
-            return f"Deleted reminder: {match['title']}"
+            return f"{get_text('reminder_deleted', Config.LANGUAGE)}: {match['title']}"
         else:
-            return "I couldn't find that reminder"
+            return get_text('couldnt_find_reminder', Config.LANGUAGE)
     
     async def _edit_reminder(self, args: Dict[str, Any]) -> str:
         """Edit a reminder."""
@@ -148,12 +150,12 @@ class ReminderAgent(SubAgent):
                 break
         
         if not match:
-            return f"I couldn't find a reminder at {old_time}"
+            return f"{get_text('couldnt_find_reminder', Config.LANGUAGE)} {get_text('at', Config.LANGUAGE)} {old_time}"
         
         # Parse new time
         parsed = self._parse_time(new_time)
         if not parsed:
-            return f"I couldn't understand the new time '{new_time}'"
+            return f"{get_text('time_parse_error', Config.LANGUAGE)} '{new_time}'"
         
         # Update reminder
         self.db.update_reminder(
@@ -163,7 +165,7 @@ class ReminderAgent(SubAgent):
             days_of_week=parsed.get('days_of_week')
         )
         
-        return f"Updated reminder from {old_time} to {new_time}"
+        return f"{get_text('reminder_updated', Config.LANGUAGE)} {get_text('from', Config.LANGUAGE)} {old_time} {get_text('to', Config.LANGUAGE)} {new_time}"
     
     def _parse_time(self, time_str: str) -> Dict:
         """Parse time string into datetime and recurrence.
@@ -327,21 +329,21 @@ class ContactsAgent(SubAgent):
             if contact:
                 info = [f"{contact['name']}"]
                 if contact['relation']:
-                    info.append(f"Relation: {contact['relation']}")
+                    info.append(f"{get_text('relation', Config.LANGUAGE)}: {contact['relation']}")
                 if contact['phone']:
-                    info.append(f"Phone: {contact['phone']}")
+                    info.append(f"{get_text('phone', Config.LANGUAGE)}: {contact['phone']}")
                 if contact['birthday']:
-                    info.append(f"Birthday: {self._format_birthday(contact['birthday'])}")
+                    info.append(f"{get_text('birthday', Config.LANGUAGE)}: {self._format_birthday(contact['birthday'])}")
                 return "\n".join(info)
             else:
-                return f"I don't have contact information for {name}"
+                return f"{get_text('no_contact_info', Config.LANGUAGE)} {name}"
         
         elif action == "list":
             contacts = self.db.get_contacts()
             if not contacts:
-                return "No contacts saved"
+                return get_text('no_contacts', Config.LANGUAGE)
             
-            lines = ["Your contacts:"]
+            lines = [get_text('your_contacts', Config.LANGUAGE)]
             for c in contacts:
                 lines.append(f"- {c['name']} ({c['relation']})")
             return "\n".join(lines)
@@ -357,12 +359,12 @@ class ContactsAgent(SubAgent):
                     bday = datetime.fromisoformat(c['birthday']).date()
                     # Check if birthday is today
                     if bday.month == today.month and bday.day == today.day:
-                        upcoming.append(f"Today is {c['name']}'s birthday!")
+                        upcoming.append(format_text('today_is_birthday', Config.LANGUAGE, name=c['name']))
             
-            return "\n".join(upcoming) if upcoming else "No birthdays today"
+            return "\n".join(upcoming) if upcoming else get_text('no_birthdays_today', Config.LANGUAGE)
         
         else:
-            return f"Unknown contact action: {action}"
+            return f"{get_text('unknown_contact_action', Config.LANGUAGE)}: {action}"
     
     def _format_birthday(self, birthday_str: str) -> str:
         """Format birthday string nicely."""
@@ -399,9 +401,9 @@ class NotificationAgent(SubAgent):
         
         if notification_type == "call":
             # This would trigger a phone call in production
-            return f"Phone call notification scheduled: {message}"
+            return f"{get_text('phone_call_scheduled', Config.LANGUAGE)}: {message}"
         else:
-            return f"Notification sent: {message}"
+            return f"{get_text('notification_sent', Config.LANGUAGE)}: {message}"
 
 
 # Agent registry

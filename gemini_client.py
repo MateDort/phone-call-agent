@@ -2,6 +2,7 @@
 import logging
 from typing import List, Dict, Optional
 from config import Config
+from translations import get_text
 
 try:
     import google.generativeai as genai
@@ -51,9 +52,7 @@ class GeminiClient:
         """
         try:
             # System prompt for Gemini
-            system_instruction = """You are a friendly AI assistant having a phone conversation. 
-Keep your responses concise and natural, as if speaking over the phone. 
-Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
+            system_instruction = get_text('system_prompt', Config.LANGUAGE)
             
             # Build conversation history for Gemini
             chat_history = []

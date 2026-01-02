@@ -2,6 +2,8 @@
 import logging
 from typing import List, Dict, Optional
 from ollama_client import OllamaClient
+from translations import get_text
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ class ConversationManager:
         """
         if not self.greeting_sent:
             self.greeting_sent = True
-            return "hey friend how can i help you"
+            return get_text('greeting', Config.LANGUAGE)
         return ""
     
     def process_user_message(self, user_text: str) -> str:
@@ -60,7 +62,7 @@ class ConversationManager:
             Agent's response text
         """
         if not user_text or not user_text.strip():
-            return "I didn't catch that. Could you repeat?"
+            return get_text('didnt_catch', Config.LANGUAGE)
         
         # Add user message to history
         self.conversation_history.append({
@@ -110,7 +112,7 @@ class ConversationManager:
         
         # Return fallback message if all fail
         if response is None:
-            response = "I'm having trouble processing that right now. Could you repeat?"
+            response = get_text('processing_trouble', Config.LANGUAGE)
         
         # Add agent response to history
         self.conversation_history.append({
@@ -129,9 +131,7 @@ class ConversationManager:
         Returns:
             Formatted prompt
         """
-        system_prompt = """You are a friendly AI assistant having a phone conversation. 
-Keep your responses concise and natural, as if speaking over the phone. 
-Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
+        system_prompt = get_text('system_prompt', Config.LANGUAGE)
         
         return f"{system_prompt}\n\nUser: {user_message}\nAssistant:"
     
