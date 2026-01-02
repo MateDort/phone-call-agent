@@ -1,5 +1,60 @@
+# Environment and credentials
 .env
+*.env
+.env.*
+
+# Python
 __pycache__/
-*.pyc
-.cursor/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Audio files
+*.wav
+*.mp3
+*.ogg
+/tmp/
+/audio_temp/
+/phone_agent_audio/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ngrok
 ngrok.log

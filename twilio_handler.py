@@ -112,12 +112,6 @@ class TwilioHandler:
             # If no input, redirect back
             response.redirect('/webhook/gather', method='POST')
             
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"T1","location":"twilio_handler.py:115","message":"Gather TwiML response","data":{"twiml":str(response)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             return Response(str(response), mimetype='text/xml')
         
         @self.app.route('/webhook/status', methods=['POST'])

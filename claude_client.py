@@ -32,17 +32,8 @@ class ClaudeClient:
             raise ValueError("CLAUDE_API_KEY is required")
         
         try:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C1","location":"claude_client.py:36","message":"Claude init start","data":{"api_key_prefix":self.api_key[:5] if self.api_key else None},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             self.client = anthropic.Anthropic(api_key=self.api_key)
         except Exception as e:
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C1","location":"claude_client.py:42","message":"Claude init failed","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Error during Claude setup: {e}")
             raise
     
@@ -78,12 +69,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 "content": prompt
             })
 
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C2","location":"claude_client.py:80","message":"Claude request start","data":{"model":self.model_name,"message_count":len(messages)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             response = self.client.messages.create(
                 model=self.model_name,
                 max_tokens=150,
@@ -91,11 +76,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 messages=messages
             )
             
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C2","location":"claude_client.py:91","message":"Claude response received","data":{"content_type":type(response.content[0]).__name__},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             if response.content and hasattr(response.content[0], 'text'):
                 response_text = response.content[0].text.strip()
                 return response_text
@@ -103,11 +83,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 raise ValueError("Empty or invalid response from Claude")
             
         except Exception as e:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C2","location":"claude_client.py:103","message":"Claude API exception","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Error calling Claude API: {e}")
             raise
     

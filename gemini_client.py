@@ -33,18 +33,9 @@ class GeminiClient:
             raise ValueError("GEMINI_API_KEY is required")
         
         try:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G3","location":"gemini_client.py:36","message":"Gemini configure start","data":{"api_key_prefix":self.api_key[:5] if self.api_key else None},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel(self.model_name)
         except Exception as e:
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G3","location":"gemini_client.py:42","message":"Gemini configure failed","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Error during Gemini setup: {e}")
             raise
     
@@ -91,12 +82,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 {"category": "HARM_CATEGORY_CIVIC_INTEGRITY", "threshold": "BLOCK_NONE"},
             ]
             
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G1","location":"gemini_client.py:97","message":"Gemini request start","data":{"model":self.model_name,"is_chat":bool(chat_history),"prompt":prompt},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             model_with_instruction = genai.GenerativeModel(
                 self.model_name,
                 system_instruction=system_instruction,
@@ -111,19 +96,8 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
             else:
                 response = model_with_instruction.generate_content(prompt)
             
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                finish_reason = response.candidates[0].finish_reason if response.candidates else "unknown"
-                has_parts = bool(response.candidates and response.candidates[0].content.parts)
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G2","location":"gemini_client.py:105","message":"Gemini response received","data":{"finish_reason":str(finish_reason),"has_parts":has_parts,"candidates_len":len(response.candidates) if response.candidates else 0},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             # Check if the response was blocked by safety
             if response.candidates and response.candidates[0].finish_reason == 2:
-                # #region agent log
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G2","location":"gemini_client.py:111","message":"Gemini blocked by safety","data":{"prompt":prompt},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 logger.warning(f"Gemini blocked response for prompt: {prompt}. Falling back to Ollama.")
                 raise ValueError("Response blocked by safety filters")
 
@@ -131,20 +105,11 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 response_text = response.text.strip()
                 return response_text
             except (AttributeError, IndexError, ValueError) as e:
-                # #region agent log
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G4","location":"gemini_client.py:121","message":"Gemini response text error","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 # If there's no text but it wasn't a standard safety block, still log and fail gracefully
                 logger.error(f"Gemini returned empty or invalid response: {e}")
                 raise ValueError("Empty response from Gemini")
             
         except Exception as e:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G4","location":"gemini_client.py:131","message":"Gemini API exception","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Error calling Gemini API: {e}")
             raise
     

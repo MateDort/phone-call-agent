@@ -16,29 +16,27 @@ class Config:
     TARGET_PHONE_NUMBER = os.getenv('TARGET_PHONE_NUMBER', '+14049525557')
     
     # Webhook Configuration
-    WEBHOOK_BASE_URL = os.getenv('WEBHOOK_BASE_URL', 'http://localhost:5000')
-    WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '5000'))
+    WEBHOOK_BASE_URL = os.getenv('WEBHOOK_BASE_URL', 'http://localhost:5002')
+    WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '5002'))
     
     # Ollama Configuration
     OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
     OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2:latest')
     
-    # Gemini Configuration
+    # Gemini Configuration (now primary for voice + LLM)
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')  # Updated to 'gemini-flash-latest' based on ListModels output
+    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'models/gemini-2.5-flash-native-audio-preview-12-2025')
+    GEMINI_VOICE = os.getenv('GEMINI_VOICE', 'Kore')  # Voice name: Kore, Puck, or Charon
     
-    # Claude Configuration
-    CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
-    CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-opus-4-5-20251101')
+    # Agent Configuration
+    AUTO_CALL = os.getenv('AUTO_CALL', 'false').lower() == 'true'  # Auto-make call on startup
     
-    # ElevenLabs Configuration
-    ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY', '')
-    ELEVENLABS_VOICE_ID = os.getenv('ELEVENLABS_VOICE_ID', 'EXAVIT9mxAsU4AKpD7Kx')  # Default: Bella
-    ELEVENLABS_MODEL_ID = os.getenv('ELEVENLABS_MODEL_ID', 'eleven_turbo_v2_5')  # Turbo v2.5 for lowest latency
+    # WebSocket Configuration for Media Streams
+    WEBSOCKET_PORT = int(os.getenv('WEBSOCKET_PORT', '5001'))
+    WEBSOCKET_URL = os.getenv('WEBSOCKET_URL', '')  # Separate ngrok URL for WebSocket
     
     # Audio Configuration
-    AUDIO_TEMP_DIR = os.getenv('AUDIO_TEMP_DIR', '/tmp/phone_agent_audio')
-    AUDIO_FORMAT = 'wav'  # Format for Twilio compatibility
+    AUDIO_SAMPLE_RATE = int(os.getenv('AUDIO_SAMPLE_RATE', '8000'))  # Twilio uses 8kHz μ-law
     
     @classmethod
     def validate(cls):

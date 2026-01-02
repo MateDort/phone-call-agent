@@ -65,12 +65,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 "stream": False
             }
             
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"ollama_client.py:65","message":"Ollama chat request start","data":{"model":self.model,"message_count":len(messages)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             # Increased timeout to 120 seconds for slower models/machines
             try:
                 response = requests.post(self.api_url, json=payload, timeout=120)
@@ -83,11 +77,6 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
                 else:
                     raise
             
-            # #region agent log
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"ollama_client.py:82","message":"Ollama chat response received","data":{"status_code":response.status_code},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
-
             response.raise_for_status()
             
             result = response.json()
@@ -95,19 +84,9 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
             return response_text
             
         except requests.exceptions.Timeout as e:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"ollama_client.py:94","message":"Ollama chat API timeout","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Ollama chat API timeout: {e}")
             raise
         except Exception as e:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"ollama_client.py:102","message":"Ollama chat API error","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Unexpected error in Ollama chat client: {e}")
             raise
     
@@ -121,18 +100,8 @@ Be conversational and helpful. Keep responses to 1-2 sentences when possible."""
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             if response.status_code == 200:
                 models = [m.get('name') for m in response.json().get('models', [])]
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O2","location":"ollama_client.py:84","message":"Ollama models check","data":{"available_models":models,"configured_model":self.model},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 return self.model in models or f"{self.model}:latest" in models or self.model.split(':')[0] in [m.split(':')[0] for m in models]
             return False
         except Exception as e:
-            # #region agent log
-            import json, time
-            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O2","location":"ollama_client.py:91","message":"Ollama connection failed","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-            # #endregion
             logger.error(f"Cannot connect to Ollama: {e}")
             return False

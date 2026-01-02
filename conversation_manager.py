@@ -73,55 +73,25 @@ class ConversationManager:
         # Try Claude first if available (as requested by user)
         if self.claude_client:
             try:
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C1","location":"conversation_manager.py:68","message":"Trying Claude","data":{"user_text":user_text},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 response = self.claude_client.generate_response(
                     prompt=user_text.strip(),
                     context=self.conversation_history[:-1]
                 )
                 if response:
-                    # #region agent log
-                    import json, time
-                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C1","location":"conversation_manager.py:75","message":"Claude success","data":{"response":response},"timestamp":int(time.time()*1000)}) + '\n')
-                    # #endregion
                     logger.info("Claude response generated successfully")
             except Exception as e:
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"C1","location":"conversation_manager.py:81","message":"Claude failed","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 logger.warning(f"Claude failed: {e}. Attempting fallback...")
         
         # Fallback to Gemini if Claude failed and Gemini is available
         if response is None and self.gemini_client:
             try:
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G1","location":"conversation_manager.py:90","message":"Trying Gemini","data":{"user_text":user_text},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 response = self.gemini_client.generate_response(
                     prompt=user_text.strip(),
                     context=self.conversation_history[:-1]
                 )
                 if response:
-                    # #region agent log
-                    import json, time
-                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G1","location":"conversation_manager.py:97","message":"Gemini success","data":{"response":response},"timestamp":int(time.time()*1000)}) + '\n')
-                    # #endregion
                     logger.info("Gemini response generated successfully")
             except Exception as e:
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"G1","location":"conversation_manager.py:103","message":"Gemini failed","data":{"error":str(e)},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 logger.warning(f"Gemini failed: {e}. Attempting Ollama fallback...")
 
         # Fallback to Ollama if both Claude and Gemini failed
@@ -129,28 +99,13 @@ class ConversationManager:
             try:
                 # Format prompt for Ollama
                 prompt = self._format_prompt(user_text)
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"conversation_manager.py:114","message":"Trying Ollama","data":{"user_text":user_text},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 response = self.ollama_client.generate_response(
                     prompt=prompt,
                     context=self.conversation_history[:-1]
                 )
                 if response:
-                    # #region agent log
-                    import json, time
-                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"conversation_manager.py:122","message":"Ollama success","data":{"response":response},"timestamp":int(time.time()*1000)}) + '\n')
-                    # #endregion
                     logger.info("Ollama response generated successfully")
             except Exception as ollama_error:
-                # #region agent log
-                import json, time
-                with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","hypothesisId":"O1","location":"conversation_manager.py:128","message":"Ollama failed","data":{"error":str(ollama_error)},"timestamp":int(time.time()*1000)}) + '\n')
-                # #endregion
                 logger.error(f"Ollama fallback also failed: {ollama_error}")
         
         # Return fallback message if all fail
