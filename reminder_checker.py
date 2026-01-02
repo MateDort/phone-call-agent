@@ -1,7 +1,7 @@
 """Background service to check for due reminders and trigger phone calls."""
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import Database
 from typing import Optional, Callable
 
@@ -24,6 +24,10 @@ class ReminderChecker:
         self.running = False
         self.in_phone_call = False
         self.check_interval = 60  # Check every 60 seconds
+        
+        # Track pending reminder for current call
+        self.pending_reminder_id = None
+        self.call_was_answered = False
     
     async def start(self):
         """Start the background reminder checking loop."""
@@ -49,8 +53,57 @@ class ReminderChecker:
         Args:
             in_call: True if in call, False otherwise
         """
+        old_status = self.in_phone_call
         self.in_phone_call = in_call
         logger.info(f"In-call status updated: {in_call}")
+        
+        # If call ended, handle the pending reminder
+        if old_status and not in_call and self.pending_reminder_id:
+            self._handle_call_ended()
+    
+    def set_call_answered(self, answered: bool):
+        """Set whether the current call was answered.
+        
+        Args:
+            answered: True if call connected (in-progress), False if not answered
+        """
+        self.call_was_answered = answered
+        logger.info(f"Call answered status: {answered}")
+    
+    def _handle_call_ended(self):
+        """Handle when a reminder call ends."""
+        if not self.pending_reminder_id:
+            return
+        
+        reminder_id = self.pending_reminder_id
+        
+        if self.call_was_answered:
+            # User answered - mark reminder as complete
+            logger.info(f"Reminder {reminder_id} was delivered - marking complete")
+            
+            # Check if it's recurring
+            cursor = self.db.conn.execute(
+                "SELECT recurrence FROM reminders WHERE id = ?",
+                (reminder_id,)
+            )
+            row = cursor.fetchone()
+            
+            if row and row[0]:  # Recurring reminder
+                # Just mark as triggered (already done in _handle_due_reminder)
+                logger.info(f"Recurring reminder {reminder_id} will trigger again based on schedule")
+            else:
+                # Non-recurring - mark as complete (deactivate)
+                self.db.mark_reminder_complete(reminder_id)
+                logger.info(f"Non-recurring reminder {reminder_id} marked as complete")
+        else:
+            # User didn't answer - reschedule for 5 minutes
+            logger.info(f"Reminder {reminder_id} not delivered - rescheduling in 5 minutes")
+            new_time = datetime.now() + timedelta(minutes=5)
+            self.db.reschedule_reminder(reminder_id, new_time)
+        
+        # Clear pending reminder
+        self.pending_reminder_id = None
+        self.call_was_answered = False
     
     async def _check_reminders(self):
         """Check for due reminders and handle them."""
@@ -81,15 +134,24 @@ class ReminderChecker:
             # User is already on the phone, announce it during the call
             logger.info(f"User in call - reminder will be announced: {title}")
             # The main agent will check for due reminders during the call
+            # Mark as complete since it's being announced
+            if not reminder['recurrence']:
+                self.db.mark_reminder_complete(reminder_id)
         else:
             # User not on call - trigger an outbound call
             logger.info(f"User not in call - triggering call for reminder: {title}")
+            
+            # Track this reminder for the call
+            self.pending_reminder_id = reminder_id
+            self.call_was_answered = False
             
             if self.call_trigger:
                 try:
                     await self.call_trigger(reminder)
                 except Exception as e:
                     logger.error(f"Error triggering call for reminder: {e}")
+                    # Clear pending if call failed
+                    self.pending_reminder_id = None
         
         # Mark as triggered
         self.db.mark_reminder_triggered(reminder_id)

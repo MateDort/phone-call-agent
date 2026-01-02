@@ -19,20 +19,25 @@ logger = logging.getLogger(__name__)
 class TwilioMediaStreamsHandler:
     """Handles Twilio Media Streams WebSocket connection with Gemini Live."""
     
-    def __init__(self, gemini_client: GeminiLiveClient):
+    def __init__(self, gemini_client: GeminiLiveClient, reminder_checker=None):
         """Initialize handler.
         
         Args:
             gemini_client: GeminiLiveClient instance
+            reminder_checker: Optional ReminderChecker instance for call status updates
         """
         self.gemini_client = gemini_client
         self.twilio_client = Client(Config.TWILIO_ACCOUNT_SID, Config.TWILIO_AUTH_TOKEN)
         self.app = Flask(__name__)
         self._setup_routes()
+        self.reminder_checker = reminder_checker
         
         # WebSocket state
         self.websocket_server = None
         self.active_connections = {}
+        
+        # Pending reminder message for auto-calls
+        self.pending_reminder = None
         
     def _setup_routes(self):
         """Set up Flask routes for Twilio webhooks."""
@@ -76,6 +81,15 @@ class TwilioMediaStreamsHandler:
             call_status = request.form.get('CallStatus')
             logger.info(f"Call {call_sid} status: {call_status}")
             
+            # Track if call was answered for reminder delivery
+            if self.reminder_checker:
+                if call_status == 'in-progress':
+                    # Call was answered
+                    self.reminder_checker.set_call_answered(True)
+                elif call_status in ['failed', 'busy', 'no-answer', 'canceled']:
+                    # Call was not answered
+                    self.reminder_checker.set_call_answered(False)
+            
             if call_status in ['completed', 'failed', 'busy', 'no-answer']:
                 # Cleanup connection
                 if call_sid in self.active_connections:
@@ -100,6 +114,12 @@ class TwilioMediaStreamsHandler:
             # Connect to Gemini Live
             await self.gemini_client.connect()
             
+            # If this is a reminder call, send the reminder message to Gemini
+            if self.pending_reminder:
+                reminder_msg = f"You need to announce this reminder to the user: {self.pending_reminder}"
+                await self.gemini_client.send_text(reminder_msg, end_of_turn=True)
+                logger.info(f"Sent reminder to Gemini: {self.pending_reminder}")
+                self.pending_reminder = None  # Clear after sending
             
             # Set up audio callback to send Gemini's audio back to Twilio
             async def send_audio_to_twilio(audio_data: bytes):
@@ -152,6 +172,10 @@ class TwilioMediaStreamsHandler:
                             'websocket': websocket
                         }
                         logger.info(f"Stream started: {stream_sid} for call {call_sid}")
+                        
+                        # Update call status in reminder checker
+                        if self.reminder_checker:
+                            self.reminder_checker.set_in_call(True)
                     
                     elif event == 'media':
                         # #region agent log
@@ -200,6 +224,11 @@ class TwilioMediaStreamsHandler:
                     elif event == 'stop':
                         # Stream ended
                         logger.info(f"Stream stopped: {stream_sid}")
+                        
+                        # Update call status in reminder checker
+                        if self.reminder_checker:
+                            self.reminder_checker.set_in_call(False)
+                        
                         break
                     
                 except json.JSONDecodeError as e:
@@ -216,6 +245,10 @@ class TwilioMediaStreamsHandler:
             await self.gemini_client.disconnect()
             if call_sid and call_sid in self.active_connections:
                 del self.active_connections[call_sid]
+            
+            # Update call status in reminder checker
+            if self.reminder_checker:
+                self.reminder_checker.set_in_call(False)
     
     async def start_websocket_server(self, host: str = '0.0.0.0', port: int = 5001):
         """Start WebSocket server for Media Streams.
@@ -237,18 +270,24 @@ class TwilioMediaStreamsHandler:
         # Keep server running
         await asyncio.Future()  # Run forever
     
-    def make_call(self, to_number: str = None, from_number: str = None) -> str:
+    def make_call(self, to_number: str = None, from_number: str = None, reminder_message: str = None) -> str:
         """Make an outbound call.
         
         Args:
             to_number: Phone number to call (defaults to config)
             from_number: Twilio phone number to call from (defaults to config)
+            reminder_message: Optional reminder message to announce when call connects
         
         Returns:
             Call SID
         """
         to_number = to_number or Config.TARGET_PHONE_NUMBER
         from_number = from_number or Config.TWILIO_PHONE_NUMBER
+        
+        # Store reminder for this call
+        if reminder_message:
+            self.pending_reminder = reminder_message
+            logger.info(f"Storing reminder message for call: {reminder_message}")
         
         webhook_url = f"{Config.WEBHOOK_BASE_URL}/webhook/voice"
         status_callback = f"{Config.WEBHOOK_BASE_URL}/webhook/status"

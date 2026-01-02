@@ -169,6 +169,31 @@ class Database:
         )
         self.conn.commit()
     
+    def mark_reminder_complete(self, reminder_id: int):
+        """Mark a non-recurring reminder as complete.
+        
+        Args:
+            reminder_id: Reminder ID
+        """
+        self.conn.execute(
+            "UPDATE reminders SET active = 0 WHERE id = ?",
+            (reminder_id,)
+        )
+        self.conn.commit()
+    
+    def reschedule_reminder(self, reminder_id: int, new_datetime: datetime):
+        """Reschedule a reminder to a new time.
+        
+        Args:
+            reminder_id: Reminder ID
+            new_datetime: New datetime for the reminder
+        """
+        self.conn.execute(
+            "UPDATE reminders SET datetime = ? WHERE id = ?",
+            (new_datetime.isoformat(), reminder_id)
+        )
+        self.conn.commit()
+    
     def get_due_reminders(self, current_time: datetime) -> List[Dict]:
         """Get reminders that are due.
         

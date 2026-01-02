@@ -70,14 +70,17 @@ Be warm, patient, and supportive. If there's a reminder due, mention it naturall
         # Register sub-agents
         self._register_sub_agents()
         
-        # Initialize reminder checker
+        # Initialize reminder checker (will be passed to Twilio handler)
         self.reminder_checker = ReminderChecker(
             db=self.db,
             call_trigger=self._trigger_reminder_call
         )
         
-        # Initialize Twilio handler
-        self.twilio_handler = TwilioMediaStreamsHandler(self.gemini_client)
+        # Initialize Twilio handler with reminder checker for call status tracking
+        self.twilio_handler = TwilioMediaStreamsHandler(
+            self.gemini_client,
+            reminder_checker=self.reminder_checker
+        )
         
         # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -132,12 +135,10 @@ Be warm, patient, and supportive. If there's a reminder due, mention it naturall
         logger.info(f"Triggering reminder call for: {reminder['title']}")
         
         try:
-            # Make outbound call via Twilio
-            call_sid = self.twilio_handler.make_call()
+            # Make outbound call via Twilio with reminder message
+            reminder_message = f"You have a reminder: {reminder['title']}"
+            call_sid = self.twilio_handler.make_call(reminder_message=reminder_message)
             logger.info(f"Reminder call initiated: {call_sid}")
-            
-            # After call connects, Gemini will be instructed to announce the reminder
-            # This happens through the system prompt and the reminder checker
             
         except Exception as e:
             logger.error(f"Error making reminder call: {e}")
