@@ -310,7 +310,7 @@ Be conversational, friendly, and helpful."""
                         response={"result": str(result)}
                     )
                     
-                    await self.session.send(function_response)
+                    await self.session.send(input=function_response)
                     logger.info(f"Function {fn_name} completed: {result}")
                     
                 except Exception as e:
@@ -322,7 +322,7 @@ Be conversational, friendly, and helpful."""
                         name=fn_name,
                         response={"error": str(e)}
                     )
-                    await self.session.send(error_response)
+                    await self.session.send(input=error_response)
             else:
                 logger.warning(f"No handler registered for function: {fn_name}")
                 
@@ -332,7 +332,7 @@ Be conversational, friendly, and helpful."""
                     name=fn_name,
                     response={"error": f"No handler for {fn_name}"}
                 )
-                await self.session.send_tool_response([error_response])
+                await self.session.send(input=error_response)
     
     async def send_notification(self, message: str):
         """Send a system notification to the agent.
