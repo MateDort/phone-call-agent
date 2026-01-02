@@ -116,22 +116,53 @@ Be conversational, friendly, and helpful."""
     async def connect(self):
         """Connect to Gemini Live session."""
         try:
+            # region agent log
+            import time
+            import json
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:119','message':'connect() called','data':{'is_connected':self.is_connected,'session_exists':bool(self.session)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A,C,E'})+'\n')
+            # endregion
+            
             config = self._build_config()
+            
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:127','message':'config built, creating context','data':{},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A,C'})+'\n')
+            # endregion
             
             # Store the context manager and enter it
             self._session_context = self.client.aio.live.connect(
                 model=self.model,
                 config=config
             )
+            
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:138','message':'before __aenter__','data':{},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A,C'})+'\n')
+            # endregion
+            
             self.session = await self._session_context.__aenter__()
             
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:145','message':'after __aenter__, before flag set','data':{'session_exists':bool(self.session)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'E'})+'\n')
+            # endregion
+            
             self.is_connected = True
+            
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:152','message':'is_connected flag set to True','data':{'is_connected':self.is_connected,'session_exists':bool(self.session)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'E'})+'\n')
+            # endregion
+            
             logger.info("Connected to Gemini Live Audio")
             
             # Start receiving responses
             asyncio.create_task(self._receive_loop())
             
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:163','message':'connect() complete, receive_loop started','data':{},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A,C'})+'\n')
+            # endregion
+            
         except Exception as e:
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:169','message':'connect() failed','data':{'error':str(e),'error_type':type(e).__name__},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'B'})+'\n')
+            # endregion
             logger.error(f"Failed to connect to Gemini Live: {e}")
             raise
     
@@ -155,7 +186,16 @@ Be conversational, friendly, and helpful."""
             audio_data: Raw audio bytes
             mime_type: Audio format (default: audio/pcm for μ-law)
         """
+        # region agent log
+        import time
+        import json
+        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:151','message':'send_audio called','data':{'is_connected':self.is_connected,'session_exists':bool(self.session),'audio_length':len(audio_data),'mime_type':mime_type},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'B,C,E'})+'\n')
+        # endregion
+        
         if not self.session or not self.is_connected:
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'gemini_live_client.py:159','message':'send_audio rejected - not connected','data':{'is_connected':self.is_connected,'session_exists':bool(self.session)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'B,C,E'})+'\n')
+            # endregion
             raise RuntimeError("Not connected to Gemini Live")
         
         try:
@@ -227,7 +267,30 @@ Be conversational, friendly, and helpful."""
                     
         except Exception as e:
             logger.error(f"Error in receive loop: {e}")
+            
+            # Only attempt reconnection if this wasn't a clean shutdown
+            should_reconnect = self.is_connected and self._session_context and "1008" in str(e)
             self.is_connected = False
+            
+            if should_reconnect:
+                logger.warning("Connection lost unexpectedly, attempting quick reconnect...")
+                try:
+                    # Clean up old session
+                    try:
+                        await self._session_context.__aexit__(None, None, None)
+                    except:
+                        pass
+                    self.session = None
+                    self._session_context = None
+                    
+                    # Quick reconnect without long delay
+                    await asyncio.sleep(0.3)
+                    
+                    # Reconnect
+                    await self.connect()
+                    logger.info("Successfully reconnected to Gemini Live")
+                except Exception as reconnect_error:
+                    logger.error(f"Failed to reconnect: {reconnect_error}")
     
     async def _handle_function_calls(self, tool_call):
         """Handle function calls from Gemini.

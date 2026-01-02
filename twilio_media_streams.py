@@ -39,6 +39,11 @@ class TwilioMediaStreamsHandler:
         # Pending reminder message for auto-calls
         self.pending_reminder = None
         
+        # Audio buffer for seamless reconnection
+        self.audio_buffer = []
+        self.is_reconnecting = False
+        self.max_buffer_size = 50  # Buffer up to 50 packets (~1 second of audio)
+        
     def _setup_routes(self):
         """Set up Flask routes for Twilio webhooks."""
         
@@ -110,9 +115,17 @@ class TwilioMediaStreamsHandler:
         try:
             logger.info("Media stream connected")
             
+            # region agent log
+            import time
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:111','message':'Before Gemini connect','data':{'call_sid':call_sid,'stream_sid':stream_sid,'gemini_connected':self.gemini_client.is_connected},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A'})+'\n')
+            # endregion
             
             # Connect to Gemini Live
             await self.gemini_client.connect()
+            
+            # region agent log
+            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:119','message':'After Gemini connect','data':{'call_sid':call_sid,'stream_sid':stream_sid,'gemini_connected':self.gemini_client.is_connected,'session_exists':bool(self.gemini_client.session)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A,E'})+'\n')
+            # endregion
             
             # Send current time to Gemini for accurate time awareness (silently in system context)
             from datetime import datetime
@@ -189,12 +202,19 @@ class TwilioMediaStreamsHandler:
                         # Audio from caller
                         payload = data['media']['payload']
                         
+                        # region agent log
+                        with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:192','message':'Media event received','data':{'call_sid':call_sid,'stream_sid':stream_sid,'gemini_connected':self.gemini_client.is_connected,'session_exists':bool(self.gemini_client.session),'is_reconnecting':self.is_reconnecting},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'A,D'})+'\n')
+                        # endregion
+                        
                         # Decode from base64
                         audio_data = base64.b64decode(payload)
                         
                         # Convert μ-law (8kHz) to Linear PCM 24kHz
                         # Twilio sends μ-law at 8kHz, Gemini expects PCM at 24kHz
                         try:
+                            # region agent log
+                            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:203','message':'Before audio conversion','data':{'audio_length':len(audio_data),'gemini_connected':self.gemini_client.is_connected,'is_reconnecting':self.is_reconnecting},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'C'})+'\n')
+                            # endregion
                             # Step 1: Convert μ-law to linear PCM (still 8kHz)
                             pcm_8k = audioop.ulaw2lin(audio_data, 2)  # 2 = 16-bit samples
                             
@@ -208,14 +228,47 @@ class TwilioMediaStreamsHandler:
                                 None    # state
                             )
                             
+                            # region agent log
+                            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:220','message':'Before send_audio','data':{'pcm_length':len(pcm_24k),'gemini_connected':self.gemini_client.is_connected,'session_exists':bool(self.gemini_client.session),'is_reconnecting':self.is_reconnecting,'buffer_size':len(self.audio_buffer)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'B,C,E'})+'\n')
+                            # endregion
+                            
+                            # Check if we're reconnecting
+                            if self.is_reconnecting or not self.gemini_client.is_connected:
+                                # Buffer audio during reconnection
+                                if len(self.audio_buffer) < self.max_buffer_size:
+                                    self.audio_buffer.append(pcm_24k)
+                                    # region agent log
+                                    with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:230','message':'Audio buffered during reconnection','data':{'buffer_size':len(self.audio_buffer)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'reconnection'})+'\n')
+                                    # endregion
+                                continue
+                            
                             # Send to Gemini with correct format
                             await self.gemini_client.send_audio(
                                 pcm_24k,
                                 mime_type="audio/pcm;rate=24000"
                             )
+                            
+                            # region agent log
+                            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:242','message':'After send_audio success','data':{},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'B'})+'\n')
+                            # endregion
                         except Exception as e:
-                            logger.error(f"Error converting audio: {e}")
-                            raise
+                            # region agent log
+                            with open('/Users/matedort/phone-call-agent/.cursor/debug.log', 'a') as f: f.write(json.dumps({'location':'twilio_media_streams.py:247','message':'Error converting audio','data':{'error':str(e),'error_type':type(e).__name__,'gemini_connected':self.gemini_client.is_connected,'session_exists':bool(self.gemini_client.session)},'timestamp':int(time.time()*1000),'sessionId':'debug-session','hypothesisId':'B,C,E'})+'\n')
+                            # endregion
+                            
+                            # If connection error, trigger reconnection
+                            if "Not connected" in str(e) or "1008" in str(e):
+                                if not self.is_reconnecting:
+                                    self.is_reconnecting = True
+                                    asyncio.create_task(self._reconnect_gemini())
+                                # Buffer this audio
+                                if len(self.audio_buffer) < self.max_buffer_size:
+                                    pcm_8k = audioop.ulaw2lin(audio_data, 2)
+                                    pcm_24k, _ = audioop.ratecv(pcm_8k, 2, 1, 8000, 24000, None)
+                                    self.audio_buffer.append(pcm_24k)
+                            else:
+                                logger.error(f"Error converting audio: {e}")
+                                raise
                     
                     elif event == 'stop':
                         # Stream ended
@@ -245,6 +298,51 @@ class TwilioMediaStreamsHandler:
             # Update call status in reminder checker
             if self.reminder_checker:
                 self.reminder_checker.set_in_call(False)
+    
+    async def _reconnect_gemini(self):
+        """Handle Gemini reconnection with buffered audio playback."""
+        try:
+            logger.warning(f"Starting reconnection... (buffer size: {len(self.audio_buffer)})")
+            
+            # Wait a brief moment for connection to stabilize
+            await asyncio.sleep(0.5)
+            
+            # The gemini_client handles reconnection in its receive_loop
+            # Wait for it to complete
+            max_wait = 5  # Max 5 seconds
+            waited = 0
+            while not self.gemini_client.is_connected and waited < max_wait:
+                await asyncio.sleep(0.1)
+                waited += 0.1
+            
+            if self.gemini_client.is_connected:
+                logger.info(f"Reconnection complete, flushing {len(self.audio_buffer)} buffered packets")
+                
+                # Flush buffered audio
+                buffer_copy = self.audio_buffer.copy()
+                self.audio_buffer.clear()
+                
+                for audio_chunk in buffer_copy:
+                    try:
+                        await self.gemini_client.send_audio(
+                            audio_chunk,
+                            mime_type="audio/pcm;rate=24000"
+                        )
+                        await asyncio.sleep(0.01)  # Small delay between packets
+                    except Exception as e:
+                        logger.error(f"Error flushing buffered audio: {e}")
+                        break
+                
+                logger.info("Buffer flushed successfully")
+            else:
+                logger.error("Reconnection timed out")
+                self.audio_buffer.clear()  # Clear buffer on timeout
+            
+        except Exception as e:
+            logger.error(f"Error in reconnection handler: {e}")
+            self.audio_buffer.clear()
+        finally:
+            self.is_reconnecting = False
     
     async def start_websocket_server(self, host: str = '0.0.0.0', port: int = 5001):
         """Start WebSocket server for Media Streams.
